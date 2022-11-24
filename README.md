@@ -2,6 +2,8 @@
 
 FFmpeg-packaging provides actions for automatically creating NuGet packages of FFmpeg binaries.
 
+[![.NET](https://github.com/ronaldvanmanen/FFmpegNuGetizer/actions/workflows/nugetize-ffmpeg.yml/badge.svg)](https://github.com/ronaldvanmanen/FFmpegNuGetizer/actions/workflows/nugetize-ffmpeg.yml)
+
 ## Table of Contents
 
 * [Code of Conduct](#code-of-conduct)
