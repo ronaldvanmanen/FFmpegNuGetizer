@@ -53,8 +53,8 @@ try {
   $ExpandedFiles = Expand-Archive -Path $ZipDownloadPath -DestinationPath $DownloadsDir -Force -Verbose *>&1
 
   Write-Host "Staging FFmpeg development libraries to '$StagingDir'..." -ForegroundColor Yellow
-  Copy-Item -Path $PackagesDir\ffmpeg -Destination $StagingDir -Force -Recurse
-  Copy-Item -Path $PackagesDir\ffmpeg.runtime.win-x64 -Destination $StagingDir -Force -Recurse
+  Copy-Item -Path $PackagesDir\FFmpeg -Destination $StagingDir -Force -Recurse
+  Copy-Item -Path $PackagesDir\FFmpeg.runtime.win-x64 -Destination $StagingDir -Force -Recurse
 
   $ExpandedFiles | Foreach-Object {
     if ($_.message -match "Created '(.*)'.*") {
@@ -62,33 +62,33 @@ try {
 
       if (($ExpandedFile -like '*\LICENSE') -or
           ($ExpandedFile -like '*\README.txt')) {
-        Copy-File -Path $ExpandedFile -Destination $StagingDir\ffmpeg -Force
-        Copy-File -Path $ExpandedFile -Destination $StagingDir\ffmpeg.runtime.win-x64 -Force
+        Copy-File -Path $ExpandedFile -Destination $StagingDir\FFmpeg -Force
+        Copy-File -Path $ExpandedFile -Destination $StagingDir\FFmpeg.runtime.win-x64 -Force
       }
       elseif ($ExpandedFile -like '*\include\*.h') {
-        Copy-File -Path $ExpandedFile -Destination $StagingDir\ffmpeg.runtime.win-x64\lib\native\include -Force
+        Copy-File -Path $ExpandedFile -Destination $StagingDir\FFmpeg\lib\native\include -Force
       }
       elseif ($ExpandedFile -like '*\bin\*.dll') {
-        Copy-File -Path $ExpandedFile -Destination $StagingDir\ffmpeg.runtime.win-x64\runtimes\win-x64\native -Force
+        Copy-File -Path $ExpandedFile -Destination $StagingDir\FFmpeg.runtime.win-x64\runtimes\win-x64\native -Force
       }
     }
   }
 
   Write-Host "Replace variable `$version`$ in runtime.json with value '$PackageVersion'..." -ForegroundColor Yellow
-  $RuntimeContent = Get-Content "$StagingDir\ffmpeg\runtime.json" -Raw
+  $RuntimeContent = Get-Content "$StagingDir\FFmpeg\runtime.json" -Raw
   $RuntimeContent = $RuntimeContent.replace('$version$', $PackageVersion)
-  Set-Content "$StagingDir\ffmpeg\runtime.json" $RuntimeContent
+  Set-Content "$StagingDir\FFmpeg\runtime.json" $RuntimeContent
 
-  Write-Host "Build 'ffmpeg' package..." -ForegroundColor Yellow
-  & nuget pack "$StagingDir\ffmpeg\ffmpeg.nuspec" -Properties version=$PackageVersion -OutputDirectory "$ArtifactsPkgDir"
+  Write-Host "Build 'FFmpeg' package..." -ForegroundColor Yellow
+  & nuget pack "$StagingDir\FFmpeg\FFmpeg.nuspec" -Properties version=$PackageVersion -OutputDirectory "$ArtifactsPkgDir"
   if ($LastExitCode -ne 0) {
-    throw "'nuget pack' failed for 'ffmpeg.nuspec'"
+    throw "'nuget pack' failed for 'FFmpeg.nuspec'"
   }
   
-  Write-Host "Build 'ffmpeg.runtime.win-x64' package..." -ForegroundColor Yellow
-  & nuget pack "$StagingDir\ffmpeg.runtime.win-x64\ffmpeg.runtime.win-x64.nuspec" -Properties version=$PackageVersion -OutputDirectory "$ArtifactsPkgDir"
+  Write-Host "Build 'FFmpeg.runtime.win-x64' package..." -ForegroundColor Yellow
+  & nuget pack "$StagingDir\FFmpeg.runtime.win-x64\FFmpeg.runtime.win-x64.nuspec" -Properties version=$PackageVersion -OutputDirectory "$ArtifactsPkgDir"
   if ($LastExitCode -ne 0) {
-    throw "'nuget pack' failed for 'ffmpeg.runtime.win-x64.nuspec'"
+    throw "'nuget pack' failed for 'FFmpeg.runtime.win-x64.nuspec'"
   }
 }
 catch {
