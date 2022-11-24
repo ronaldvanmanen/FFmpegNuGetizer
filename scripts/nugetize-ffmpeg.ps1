@@ -30,7 +30,9 @@ try {
 
   & dotnet tool restore
 
-  $GitVersion = dotnet gitversion /output json | ConvertFrom-Json
+  $GitVersionRaw = dotnet gitversion /output json
+  Write-Host "GitVersion output: $GitVersionRaw ..." -ForegroundColor Yellow
+  $GitVersion = $GitVersionRaw | ConvertFrom-Json
   $MajorMinorPatch = $GitVersion.MajorMinorPatch
   $PackageVersion = $GitVersion.NuGetVersion
 
