@@ -65,8 +65,29 @@ try {
         Copy-File -Path $ExpandedFile -Destination $StagingDir\FFmpeg -Force
         Copy-File -Path $ExpandedFile -Destination $StagingDir\FFmpeg.runtime.win-x64 -Force
       }
-      elseif ($ExpandedFile -like '*\include\*.h') {
-        Copy-File -Path $ExpandedFile -Destination $StagingDir\FFmpeg\lib\native\include -Force
+      elseif ($ExpandedFile -like '*\include\libavcodec\*.h') {
+        Copy-File -Path $ExpandedFile -Destination $StagingDir\FFmpeg\lib\native\include\libavcodec -Force
+      }
+      elseif ($ExpandedFile -like '*\include\libavdevice\*.h') {
+        Copy-File -Path $ExpandedFile -Destination $StagingDir\FFmpeg\lib\native\include\libavdevice -Force
+      }
+      elseif ($ExpandedFile -like '*\include\libavfilter\*.h') {
+        Copy-File -Path $ExpandedFile -Destination $StagingDir\FFmpeg\lib\native\include\libavfilter -Force
+      }
+      elseif ($ExpandedFile -like '*\include\libavformat\*.h') {
+        Copy-File -Path $ExpandedFile -Destination $StagingDir\FFmpeg\lib\native\include\libavformat -Force
+      }
+      elseif ($ExpandedFile -like '*\include\libavutil\*.h') {
+        Copy-File -Path $ExpandedFile -Destination $StagingDir\FFmpeg\lib\native\include\libavutil -Force
+      }
+      elseif ($ExpandedFile -like '*\include\libpostproc\*.h') {
+        Copy-File -Path $ExpandedFile -Destination $StagingDir\FFmpeg\lib\native\include\libpostproc -Force
+      }
+      elseif ($ExpandedFile -like '*\include\libswresample\*.h') {
+        Copy-File -Path $ExpandedFile -Destination $StagingDir\FFmpeg\lib\native\include\libswresample -Force
+      }
+      elseif ($ExpandedFile -like '*\include\libswscale\*.h') {
+        Copy-File -Path $ExpandedFile -Destination $StagingDir\FFmpeg\lib\native\include\libswscale -Force
       }
       elseif ($ExpandedFile -like '*\bin\*.dll') {
         Copy-File -Path $ExpandedFile -Destination $StagingDir\FFmpeg.runtime.win-x64\runtimes\win-x64\native -Force
