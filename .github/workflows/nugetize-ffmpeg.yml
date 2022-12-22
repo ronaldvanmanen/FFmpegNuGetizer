@@ -27,6 +27,8 @@ jobs:
         nuget-version: '5.x'
     - run: .\scripts\nugetize-ffmpeg.cmd
       shell: cmd
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     - uses: actions/upload-artifact@v3
       with:
         name: dependencies
