@@ -49,7 +49,7 @@ try {
   $ZipDownloadPath = Join-Path $DownloadsDir $AssetName
 
   if (!(Test-Path $ZipDownloadPath)) {
-    Write-Host "Downloading FFmpeg development libraries version '$LatestVersion' from '$BrowserDownloadUrl'..." -ForegroundColor Yellow
+    Write-Host "Downloading FFmpeg development libraries version '$MajorMinorPatch' from '$BrowserDownloadUrl'..." -ForegroundColor Yellow
     Invoke-WebRequest -Uri $BrowserDownloadUrl -OutFile $ZipDownloadPath
   }
 
