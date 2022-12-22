@@ -37,7 +37,11 @@ try {
   $PackageVersion = $GitVersion.NuGetVersion
 
   Write-Host "Get FFmpeg release for version $MajorMinorPatch..." -ForegroundColor Yellow
-  $Release = Invoke-RestMethod -Headers @{ 'Accept'='application/vnd.github+json'; 'Authorization'="Bearer $Env:GITHUB_TOKEN"; 'User-Agent'='FFmpeg-packaging' } -Uri "https://api.github.com/repos/GyanD/codexffmpeg/releases/tags/$MajorMinorPatch"
+  $Headers = @{ 'Accept'='application/vnd.github+json'; 'User-Agent'='FFmpeg-packaging' }
+  if (Test-Path env:GITHUB_TOKEN) {
+    $Headers.Add('Authorization', "Bearer $Env:GITHUB_TOKEN")
+  }
+  $Release = Invoke-RestMethod -Headers $Headers -Uri "https://api.github.com/repos/GyanD/codexffmpeg/releases/tags/$MajorMinorPatch"
   $Asset = $Release.assets | Where-Object { $_.name -Like "ffmpeg-$MajorMinorPatch-full_build-shared.zip" }
   $AssetName = $Asset.name
   $BrowserDownloadUrl = $Asset.browser_download_url
