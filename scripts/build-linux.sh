@@ -115,6 +115,7 @@ fi
 
 echo "$ScriptName: Installing dependencies needed to build FFmpeg..."
 sudo apt-get -y install \
+  asciidoc \
   autoconf \
   automake \
   build-essential \
@@ -137,6 +138,7 @@ sudo apt-get -y install \
   pkg-config \
   texinfo \
   wget \
+  xmlto \
   yasm \
   zlib1g-dev
 LAST_EXITCODE=$?
@@ -169,9 +171,29 @@ if ! command -v nuget &> /dev/null; then
   alias nuget="mono $NuGetInstallPath"
 fi
 
+echo "$ScriptName: Building NASM..."
+$ScriptRoot/build-nasm.sh
+LAST_EXITCODE=$?
+if [ $LAST_EXITCODE != 0 ]; then
+  echo "$ScriptName: Failed to build NASM."
+  exit "$LAST_EXITCODE"
+fi
+
+echo "$ScriptName: Building libx264..."
+$ScriptRoot/build-libx264.sh --architecture $Architecture
+LAST_EXITCODE=$?
+if [ $LAST_EXITCODE != 0 ]; then
+  echo "$ScriptName: Failed to build libx264."
+  exit "$LAST_EXITCODE"
+fi
+
 echo "$ScriptName: Configuring build for FFmpeg in $BuildDir..."
 pushd "$BuildDir"
+export PATH="$InstallRoot/bin:$PATH"
+export PKG_CONFIG_PATH="$InstallRoot/lib/pkgconfig"
 "$SourceDir/configure" \
+  --enable-gpl \
+  --enable-libx264 \
   --enable-shared \
   --prefix="$InstallDir" \
   --pkg-config-flags="--static" \
