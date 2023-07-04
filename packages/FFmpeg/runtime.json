@@ -1,8 +1,8 @@
 {
   "runtimes": {
-    "win-x64": {
+    "linux-x64": {
       "FFmpeg": {
-        "FFmpeg.runtime.win-x64": "$version$"
+        "FFmpeg.runtime.linux-x64": "$version$"
       }
     }
   }
