@@ -3,12 +3,13 @@
   <metadata minClientVersion="2.12">
     <id>FFmpeg.runtime.linux-x64</id>
     <version>$version$</version>
+    <description>Linux x64 native library for FFmpeg.</description>
     <authors>Ronald van Manen</authors>
     <owners>Ronald van Manen</owners>
-    <requireLicenseAcceptance>true</requireLicenseAcceptance>
-    <license type="expression">GPL-3.0-or-later</license>
     <projectUrl>https://github.com/ronaldvanmanen/FFmpeg-packaging</projectUrl>
-    <description>Linux x64 native library for FFmpeg.</description>
+    <license type="expression">GPL-3.0-or-later</license>
+    <readme>README.md</readme>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
     <copyright>Copyright © Ronald van Manen</copyright>
     <repository type="git" url="https://github.com/ronaldvanmanen/FFmpeg-packaging" />
   </metadata>
