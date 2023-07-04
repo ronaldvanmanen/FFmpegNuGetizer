@@ -12,6 +12,34 @@ on:
       - 'main'
 
 jobs:
+  build-linux:
+    name: ${{ matrix.platform.name }}
+    runs-on: ${{ matrix.platform.os }}
+    strategy:
+      matrix:
+        platform:
+          - { name: Build Linux (x64), os: ubuntu-latest, architecture: x64 }
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+        submodules: true
+    - uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '6.0.x'
+        source-url: https://pkgs.dev.azure.com/ronaldvanmanen/FFmpegSharp/_packaging/FFmpegSharp/nuget/v3/index.json
+      env:
+        NUGET_AUTH_TOKEN: ${{ secrets.AZURE_DEVOPS_PAT }}
+    - uses: nuget/setup-nuget@v1
+      with:
+        nuget-version: '6.x'
+    - run: ./scripts/build-linux.sh --architecture ${{ matrix.platform.architecture }}
+      shell: bash
+    - uses: actions/upload-artifact@v3
+      with:
+        name: artifacts
+        path: ./artifacts/packages/**/*
+        if-no-files-found: error
   build-multiplatform:
     name: Build Multiplatform
     runs-on: windows-latest
@@ -33,7 +61,7 @@ jobs:
   publish-artifacts-on-azure:
     name: Publish Artifacts on Azure
     runs-on: ubuntu-latest
-    needs: [ build-multiplatform ]
+    needs: [ build-linux, build-multiplatform ]
     steps:
     - uses: actions/download-artifact@v3
       with:
@@ -51,7 +79,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       packages: write    
-    needs: [ build-multiplatform ]
+    needs: [ build-linux, build-multiplatform ]
     steps:
     - uses: actions/download-artifact@v3
       with:
