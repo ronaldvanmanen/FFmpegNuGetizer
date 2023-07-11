@@ -187,6 +187,14 @@ if [ $LAST_EXITCODE != 0 ]; then
   exit "$LAST_EXITCODE"
 fi
 
+echo "$ScriptName: Building libx265..."
+$ScriptRoot/build-libx265.sh --architecture $Architecture
+LAST_EXITCODE=$?
+if [ $LAST_EXITCODE != 0 ]; then
+  echo "$ScriptName: Failed to build libx265."
+  exit "$LAST_EXITCODE"
+fi
+
 echo "$ScriptName: Configuring build for FFmpeg in $BuildDir..."
 pushd "$BuildDir"
 export PATH="$InstallRoot/bin:$PATH"
@@ -194,6 +202,7 @@ export PKG_CONFIG_PATH="$InstallRoot/lib/pkgconfig"
 "$SourceDir/configure" \
   --enable-gpl \
   --enable-libx264 \
+  --enable-libx265 \
   --enable-shared \
   --prefix="$InstallDir" \
   --pkg-config-flags="--static" \

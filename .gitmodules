@@ -7,3 +7,6 @@
 [submodule "sources/x264"]
 	path = sources/x264
 	url = https://code.videolan.org/videolan/x264.git
+[submodule "sources/x265"]
+	path = sources/x265
+	url = https://bitbucket.org/multicoreware/x265_git.git
