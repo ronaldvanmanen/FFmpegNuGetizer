@@ -195,6 +195,14 @@ if [ $LAST_EXITCODE != 0 ]; then
   exit "$LAST_EXITCODE"
 fi
 
+echo "$ScriptName: Building libvpx..."
+$ScriptRoot/build-libvpx.sh --architecture $Architecture
+LAST_EXITCODE=$?
+if [ $LAST_EXITCODE != 0 ]; then
+  echo "$ScriptName: Failed to build libvpx."
+  exit "$LAST_EXITCODE"
+fi
+
 echo "$ScriptName: Configuring build for FFmpeg in $BuildDir..."
 pushd "$BuildDir"
 export PATH="$InstallRoot/bin:$PATH"
@@ -203,6 +211,7 @@ export PKG_CONFIG_PATH="$InstallRoot/lib/pkgconfig"
   --enable-gpl \
   --enable-libx264 \
   --enable-libx265 \
+  --enable-libvpx \
   --enable-shared \
   --prefix="$InstallDir" \
   --pkg-config-flags="--static" \

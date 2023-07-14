@@ -10,3 +10,6 @@
 [submodule "sources/x265"]
 	path = sources/x265
 	url = https://bitbucket.org/multicoreware/x265_git.git
+[submodule "sources/vpx"]
+	path = sources/vpx
+	url = https://chromium.googlesource.com/webm/libvpx.git
