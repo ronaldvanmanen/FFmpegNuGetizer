@@ -227,6 +227,14 @@ if [ $LAST_EXITCODE != 0 ]; then
   exit "$LAST_EXITCODE"
 fi
 
+echo "$ScriptName: Building libsvt-av1..."
+$ScriptRoot/build-libsvt-av1.sh --architecture $Architecture
+LAST_EXITCODE=$?
+if [ $LAST_EXITCODE != 0 ]; then
+  echo "$ScriptName: Failed to build libsvt-av1."
+  exit "$LAST_EXITCODE"
+fi
+
 echo "$ScriptName: Configuring build for FFmpeg in $BuildDir..."
 pushd "$BuildDir"
 export PATH="$InstallRoot/bin:$PATH"
@@ -239,6 +247,7 @@ export PKG_CONFIG_PATH="$InstallRoot/lib/pkgconfig"
   --enable-libfdk-aac \
   --enable-libopus \
   --enable-libaom \
+  --enable-libsvtav1 \
   --enable-nonfree \
   --enable-shared \
   --prefix="$InstallDir" \
