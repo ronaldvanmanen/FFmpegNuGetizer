@@ -28,3 +28,6 @@
 [submodule "sources/dav1d"]
 	path = sources/dav1d
 	url = https://code.videolan.org/videolan/dav1d.git
+[submodule "sources/vmaf"]
+	path = sources/vmaf
+	url = https://github.com/Netflix/vmaf.git
