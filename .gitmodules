@@ -16,3 +16,6 @@
 [submodule "sources/fdk-aac"]
 	path = sources/fdk-aac
 	url = https://github.com/mstorsjo/fdk-aac.git
+[submodule "sources/opus"]
+	path = sources/opus
+	url = https://github.com/xiph/opus.git
