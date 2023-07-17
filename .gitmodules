@@ -19,3 +19,6 @@
 [submodule "sources/opus"]
 	path = sources/opus
 	url = https://github.com/xiph/opus.git
+[submodule "sources/aom"]
+	path = sources/aom
+	url = https://aomedia.googlesource.com/aom
