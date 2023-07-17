@@ -25,3 +25,6 @@
 [submodule "sources/svt-av1"]
 	path = sources/svt-av1
 	url = https://gitlab.com/AOMediaCodec/SVT-AV1.git
+[submodule "sources/dav1d"]
+	path = sources/dav1d
+	url = https://code.videolan.org/videolan/dav1d.git
