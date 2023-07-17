@@ -13,3 +13,6 @@
 [submodule "sources/vpx"]
 	path = sources/vpx
 	url = https://chromium.googlesource.com/webm/libvpx.git
+[submodule "sources/fdk-aac"]
+	path = sources/fdk-aac
+	url = https://github.com/mstorsjo/fdk-aac.git

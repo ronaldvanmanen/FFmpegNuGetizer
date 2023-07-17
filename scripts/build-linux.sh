@@ -203,6 +203,14 @@ if [ $LAST_EXITCODE != 0 ]; then
   exit "$LAST_EXITCODE"
 fi
 
+echo "$ScriptName: Building libfdk-aac..."
+$ScriptRoot/build-libfdk-aac.sh --architecture $Architecture
+LAST_EXITCODE=$?
+if [ $LAST_EXITCODE != 0 ]; then
+  echo "$ScriptName: Failed to build libfdk-aac."
+  exit "$LAST_EXITCODE"
+fi
+
 echo "$ScriptName: Configuring build for FFmpeg in $BuildDir..."
 pushd "$BuildDir"
 export PATH="$InstallRoot/bin:$PATH"
@@ -212,6 +220,8 @@ export PKG_CONFIG_PATH="$InstallRoot/lib/pkgconfig"
   --enable-libx264 \
   --enable-libx265 \
   --enable-libvpx \
+  --enable-libfdk-aac \
+  --enable-nonfree \
   --enable-shared \
   --prefix="$InstallDir" \
   --pkg-config-flags="--static" \
