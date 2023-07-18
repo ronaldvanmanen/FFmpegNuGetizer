@@ -93,42 +93,8 @@ if [ $LAST_EXITCODE != 0 ]; then
   exit "$LAST_EXITCODE"
 fi
 
-echo "$ScriptName: Updating package list before installating dependencies needed to build FFmpeg..."
-sudo apt-get update
-LAST_EXITCODE=$?
-if [ $LAST_EXITCODE != 0 ]; then
-  echo "$ScriptName: Failed to update package list before installating dependencies needed to build FFmpeg."
-  exit "$LAST_EXITCODE"
-fi
-
 echo "$ScriptName: Installing dependencies needed to build FFmpeg..."
-sudo apt-get -y install \
-  asciidoc \
-  autoconf \
-  automake \
-  build-essential \
-  cmake \
-  git \
-  libass-dev \
-  libfreetype6-dev \
-  libgnutls28-dev \
-  libmp3lame-dev \
-  libsdl2-dev \
-  libtool \
-  libva-dev \
-  libvdpau-dev \
-  libvorbis-dev \
-  libxcb1-dev \
-  libxcb-shm0-dev \
-  libxcb-xfixes0-dev \
-  meson \
-  ninja-build \
-  pkg-config \
-  texinfo \
-  wget \
-  xmlto \
-  yasm \
-  zlib1g-dev
+$ScriptRoot/install-dependencies.sh
 LAST_EXITCODE=$?
 if [ $LAST_EXITCODE != 0 ]; then
   echo "$ScriptName: Failed to install dependencies needed to build FFmpeg."
