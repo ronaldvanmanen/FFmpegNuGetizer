@@ -71,7 +71,7 @@ if [ $LAST_EXITCODE != 0 ]; then
 fi
 
 echo "$ScriptName: Restoring dotnet tools ..."
-dotnet tool restore
+$ScriptRoot/restore-dotnet-tools.sh
 LAST_EXITCODE=$?
 if [ $LAST_EXITCODE != 0 ]; then
   echo "$ScriptName: Failed to restore dotnet tools."
