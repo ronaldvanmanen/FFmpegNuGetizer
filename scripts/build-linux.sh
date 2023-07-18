@@ -93,36 +93,20 @@ if [ $LAST_EXITCODE != 0 ]; then
   exit "$LAST_EXITCODE"
 fi
 
+echo "$ScriptName: Installing nuget..."
+$ScriptRoot/install-nuget.sh
+LAST_EXITCODE=$?
+if [ $LAST_EXITCODE != 0 ]; then
+  echo "$ScriptName: Failed to install nuget."
+  exit "$LAST_EXITCODE"
+fi
+
 echo "$ScriptName: Installing dependencies needed to build FFmpeg..."
 $ScriptRoot/install-dependencies.sh
 LAST_EXITCODE=$?
 if [ $LAST_EXITCODE != 0 ]; then
   echo "$ScriptName: Failed to install dependencies needed to build FFmpeg."
   exit "$LAST_EXITCODE"
-fi
-
-if ! command -v nuget &> /dev/null; then
-  echo "$ScriptName: Installing packages needed to pack FFmpeg..."
-  sudo apt-get -y install mono-devel
-  LAST_EXITCODE=$?
-  if [ $LAST_EXITCODE != 0 ]; then
-    echo "$ScriptName: Failed to installed packages needed pack FFmpeg."
-    exit "$LAST_EXITCODE"
-  fi
-
-  NuGetUrl='https://dist.nuget.org/win-x86-commandline/latest/nuget.exe'
-  NuGetInstallPath="$ArtifactsRoot/nuget.exe"
-  echo "$ScriptName: Downloading latest stable 'nuget.exe' from $NuGetUrl to $NuGetInstallPath..."
-  sudo curl -o $NuGetInstallPath $NuGetUrl
-  LAST_EXITCODE=$?
-  if [ $LAST_EXITCODE != 0 ]; then
-    echo "$ScriptName: Failed to download 'nuget.exe' from $NuGetUrl to $NuGetInstallPath."
-    exit "$LAST_EXITCODE"
-  fi
-
-  echo "$ScriptName: Creating alias for 'nuget' installed in $NuGetInstallPath..."
-  shopt -s expand_aliases
-  alias nuget="mono $NuGetInstallPath"
 fi
 
 echo "$ScriptName: Building NASM..."
