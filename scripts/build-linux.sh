@@ -78,24 +78,12 @@ PackageRoot="$ArtifactsRoot/packages"
 MakeDirectory "$ArtifactsRoot" "$BuildRoot" "$BuildDir" "$InstallRoot" "$InstallDir" "$PackageRoot"
 
 echo "$ScriptName: Installing dotnet ..."
-export DOTNET_CLI_TELEMETRY_OPTOUT=1
-export DOTNET_MULTILEVEL_LOOKUP=0
-export DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
-
-DotNetInstallScript="$ArtifactsRoot/dotnet-install.sh"
-wget -O "$DotNetInstallScript" "https://dot.net/v1/dotnet-install.sh"
-
-DotNetInstallDirectory="$ArtifactsRoot/dotnet"
-MakeDirectory "$DotNetInstallDirectory"
-
-bash "$DotNetInstallScript" --channel 6.0 --version latest --install-dir "$DotNetInstallDirectory"
+$ScriptRoot/install-dotnet.sh
 LAST_EXITCODE=$?
 if [ $LAST_EXITCODE != 0 ]; then
-  echo "$ScriptName: Failed to install dotnet 6.0."
+  echo "$ScriptName: Failed to install dotnet."
   exit "$LAST_EXITCODE"
 fi
-
-PATH="$DotNetInstallDirectory:$PATH:"
 
 echo "$ScriptName: Restoring dotnet tools ..."
 dotnet tool restore
