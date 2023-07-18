@@ -62,21 +62,6 @@ if [[ -z "$Architecture" ]]; then
   exit 1
 fi
 
-Runtime="linux-$architecture"
-
-RepoRoot="$ScriptRoot/.."
-SourceRoot="$RepoRoot/sources"
-SourceDir="$SourceRoot/FFmpeg"
-
-ArtifactsRoot="$RepoRoot/artifacts"
-BuildRoot="$ArtifactsRoot/build"
-BuildDir="$BuildRoot/FFmpeg/$Runtime"
-InstallRoot="$ArtifactsRoot/install"
-InstallDir="$InstallRoot/FFmpeg/$Runtime"
-PackageRoot="$ArtifactsRoot/packages"
-
-MakeDirectory "$ArtifactsRoot" "$BuildRoot" "$BuildDir" "$InstallRoot" "$InstallDir" "$PackageRoot"
-
 echo "$ScriptName: Installing dotnet ..."
 $ScriptRoot/install-dotnet.sh
 LAST_EXITCODE=$?
@@ -189,80 +174,10 @@ if [ $LAST_EXITCODE != 0 ]; then
   exit "$LAST_EXITCODE"
 fi
 
-echo "$ScriptName: Configuring build for FFmpeg in $BuildDir..."
-pushd "$BuildDir"
-export PATH="$InstallRoot/bin:$PATH"
-export PKG_CONFIG_PATH="$InstallRoot/lib/pkgconfig"
-"$SourceDir/configure" \
-  --enable-gpl \
-  --enable-libx264 \
-  --enable-libx265 \
-  --enable-libvpx \
-  --enable-libfdk-aac \
-  --enable-libopus \
-  --enable-libaom \
-  --enable-libsvtav1 \
-  --enable-libdav1d \
-  --enable-libvmaf \
-  --enable-nonfree \
-  --enable-shared \
-  --prefix="$InstallDir" \
-  --pkg-config-flags="--static" \
-  --extra-cflags="-I$InstallRoot/include" \
-  --extra-ldflags="-L$InstallRoot/lib" \
-  --extra-libs="-lpthread -lm" \
-  --ld="g++"
-LAST_EXITCODE=$?
-popd
-if [ $LAST_EXITCODE != 0 ]; then
-  echo "$ScriptName: Failed to configure build for FFmpeg in $BuildDir."
-  exit "$LAST_EXITCODE"
-fi
-
-echo "$ScriptName: Building FFmpeg in $BuildDir..."
-pushd "$BuildDir"
-make
-popd
+echo "$ScriptName: Building FFmpeg..."
+$ScriptRoot/build-ffmpeg.sh --architecture $Architecture
 LAST_EXITCODE=$?
 if [ $LAST_EXITCODE != 0 ]; then
-  echo "$ScriptName: Failed to build FFmpeg in $BuildDir."
-  exit "$LAST_EXITCODE"
-fi
-
-echo "$ScriptName: Installing FFmpeg to $InstallDir..."
-pushd "$BuildDir"
-make install
-popd
-LAST_EXITCODE=$?
-if [ $LAST_EXITCODE != 0 ]; then
-  echo "$ScriptName: Failed to install FFmpeg version in $InstallDir."
-  exit "$LAST_EXITCODE"
-fi
-
-NuGetVersion=$(nuget ? | grep -oP 'NuGet Version: \K.+')
-
-echo "$ScriptName: Calculating FFmpeg package version..."
-PackageVersion=$(dotnet gitversion /output json /showvariable NuGetVersion)
-LAST_EXITCODE=$?
-if [ $LAST_EXITCODE != 0 ]; then
-  echo "$ScriptName: Failed to calculate FFmpeg package version."
-  exit "$LAST_EXITCODE"
-fi
-
-RuntimePackageName="FFmpeg.runtime.$Runtime"
-RuntimePackageBuildDir="$BuildRoot/$RuntimePackageName.nupkg"
-
-echo "$ScriptName: Producing FFmpeg runtime package folder structure in $RuntimePackageBuildDir..."
-MakeDirectory "$RuntimePackageBuildDir"
-cp -dR "$RepoRoot/packages/$RuntimePackageName/." "$RuntimePackageBuildDir"
-cp -d "$SourceDir/LICENSE.md" "$RuntimePackageBuildDir"
-cp -d "$SourceDir/README.md" "$RuntimePackageBuildDir"
-mkdir -p "$RuntimePackageBuildDir/runtimes/$Runtime/native" && cp -d "$InstallDir/lib/"*"so"* $_
-
-echo "$ScriptName: Building FFmpeg runtime package (using NuGet $NuGetVersion)..."
-nuget pack "$RuntimePackageBuildDir/$RuntimePackageName.nuspec" -Properties "version=$PackageVersion" -OutputDirectory $PackageRoot
-LAST_EXITCODE=$?
-if [ $LAST_EXITCODE != 0 ]; then
-  echo "$ScriptName: Failed to build FFmpeg runtime package."
+  echo "$ScriptName: Failed to build FFmpeg."
   exit "$LAST_EXITCODE"
 fi
