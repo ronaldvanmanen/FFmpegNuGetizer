@@ -181,3 +181,11 @@ if [ $LAST_EXITCODE != 0 ]; then
   echo "$ScriptName: Failed to build FFmpeg."
   exit "$LAST_EXITCODE"
 fi
+
+echo "$ScriptName: Packing FFmpeg..."
+$ScriptRoot/pack-ffmpeg.sh --architecture $Architecture
+LAST_EXITCODE=$?
+if [ $LAST_EXITCODE != 0 ]; then
+  echo "$ScriptName: Failed to pack FFmpeg."
+  exit "$LAST_EXITCODE"
+fi

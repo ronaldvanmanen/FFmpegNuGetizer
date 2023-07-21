@@ -64,63 +64,45 @@ fi
 
 LibraryName="FFmpeg"
 LibraryRuntime="linux-$Architecture"
+PackageName="$LibraryName.runtime.$LibraryRuntime"
 
 RepoRoot="$ScriptRoot/.."
 ArtifactsRoot="$RepoRoot/artifacts"
 SourceDir="$RepoRoot/sources/$LibraryName"
-BuildDir="$ArtifactsRoot/build/$LibraryRuntime/$LibraryName"
+BuildDir="$ArtifactsRoot/build/$LibraryRuntime/$PackageName.nupkg"
 InstallRoot="$ArtifactsRoot/install"
 InstallDir="$InstallRoot/$LibraryRuntime"
 PackagesDir="$ArtifactsRoot/packages"
 
 MakeDirectory "$ArtifactsRoot" "$BuildDir" "$InstallRoot" "$InstallDir" "$PackagesDir"
 
-echo "$ScriptName: Configuring build for $LibraryName in $BuildDir..."
-pushd "$BuildDir"
-export PATH="$InstallRoot/native/bin:$PATH"
-export PKG_CONFIG_PATH="$InstallDir/lib/pkgconfig"
-"$SourceDir/configure" \
-  --enable-gpl \
-  --enable-libx264 \
-  --enable-libx265 \
-  --enable-libvpx \
-  --enable-libfdk-aac \
-  --enable-libopus \
-  --enable-libaom \
-  --enable-libsvtav1 \
-  --enable-libdav1d \
-  --enable-libvmaf \
-  --enable-nonfree \
-  --enable-shared \
-  --prefix="$InstallDir" \
-  --pkg-config-flags="--static" \
-  --extra-cflags="-I$InstallRoot/include" \
-  --extra-ldflags="-L$InstallRoot/lib" \
-  --extra-libs="-lpthread -lm" \
-  --ld="g++"
+echo "$ScriptName: Calculating $LibraryName package version..."
+PackageVersion=$(dotnet gitversion /output json /showvariable NuGetVersion)
 LAST_EXITCODE=$?
 if [ $LAST_EXITCODE != 0 ]; then
-  echo "$ScriptName: Failed to configure build for $LibraryName in $BuildDir."
+  echo "$ScriptName: Failed to calculate $LibraryName package version."
   exit "$LAST_EXITCODE"
 fi
-popd
 
-echo "$ScriptName: Building $LibraryName in $BuildDir..."
-pushd "$BuildDir"
-make
-LAST_EXITCODE=$?
-if [ $LAST_EXITCODE != 0 ]; then
-  echo "$ScriptName: Failed to build $LibraryName in $BuildDir."
-  exit "$LAST_EXITCODE"
-fi
-popd
+echo "$ScriptName: Producing $LibraryName runtime package folder structure in $BuildDir..."
+MakeDirectory "$BuildDir"
+cp -dR "$RepoRoot/packages/$PackageName/." "$BuildDir"
+cp -d "$SourceDir/LICENSE.md" "$BuildDir"
+cp -d "$SourceDir/README.md" "$BuildDir"
+mkdir -p "$BuildDir/runtimes/$LibraryRuntime/native" \
+  && cp -d "$InstallDir/lib/libavcodec.so"* $_ \
+  && cp -d "$InstallDir/lib/libavdevice.so"* $_ \
+  && cp -d "$InstallDir/lib/libavfilter.so"* $_ \
+  && cp -d "$InstallDir/lib/libavformat.so"* $_ \
+  && cp -d "$InstallDir/lib/libavutil.so"* $_ \
+  && cp -d "$InstallDir/lib/libpostproc.so"* $_ \
+  && cp -d "$InstallDir/lib/libswresample.so"* $_ \
+  && cp -d "$InstallDir/lib/libswscale.so"* $_
 
-echo "$ScriptName: Installing $LibraryName to $InstallDir..."
-pushd "$BuildDir"
-make install
+echo "$ScriptName: Building $LibraryName runtime package..."
+nuget pack "$BuildDir/$PackageName.nuspec" -Properties "version=$PackageVersion" -OutputDirectory $PackagesDir
 LAST_EXITCODE=$?
 if [ $LAST_EXITCODE != 0 ]; then
-  echo "$ScriptName: Failed to install $LibraryName version in $InstallDir."
+  echo "$ScriptName: Failed to build $LibraryName runtime package."
   exit "$LAST_EXITCODE"
 fi
-popd
