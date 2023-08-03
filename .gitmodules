@@ -1,5 +1,5 @@
 [submodule "sources/FFmpeg"]
-	path = sources/FFmpeg
+	path = sources/ffmpeg
 	url = https://github.com/FFmpeg/FFmpeg.git
 [submodule "sources/nasm"]
 	path = sources/nasm

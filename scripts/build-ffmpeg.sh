@@ -63,12 +63,13 @@ if [[ -z "$Architecture" ]]; then
 fi
 
 LibraryName="FFmpeg"
+
 LibraryRuntime="linux-$Architecture"
 
 RepoRoot="$ScriptRoot/.."
 ArtifactsRoot="$RepoRoot/artifacts"
-SourceDir="$RepoRoot/sources/$LibraryName"
-BuildDir="$ArtifactsRoot/build/$LibraryRuntime/$LibraryName"
+SourceDir="$RepoRoot/sources/ffmpeg"
+BuildDir="$ArtifactsRoot/build/$LibraryRuntime/ffmpeg"
 InstallRoot="$ArtifactsRoot/install"
 InstallDir="$InstallRoot/$LibraryRuntime"
 PackagesDir="$ArtifactsRoot/packages"
