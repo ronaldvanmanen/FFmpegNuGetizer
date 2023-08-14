@@ -26,7 +26,7 @@ ScriptName=$(basename -s '.sh' "$SOURCE")
 
 LibraryName="nasm"
 
-RepoRoot="$ScriptRoot/.."
+RepoRoot="$ScriptRoot/../.."
 ArtifactsRoot="$RepoRoot/artifacts"
 SourceDir="$RepoRoot/sources/$LibraryName"
 BuildDir="$ArtifactsRoot/build/$LibraryName"

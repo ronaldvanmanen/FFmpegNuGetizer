@@ -62,49 +62,47 @@ if [[ -z "$Architecture" ]]; then
   exit 1
 fi
 
-LibraryName='vmaf'
-
+LibraryName="FFmpeg"
 LibraryRuntime="linux-$Architecture"
+PackageName="$LibraryName.runtime.$LibraryRuntime"
 
-RepoRoot="$ScriptRoot/.."
+RepoRoot="$ScriptRoot/../.."
 ArtifactsRoot="$RepoRoot/artifacts"
-SourceDir="$RepoRoot/sources/$LibraryName"
-BuildDir="$ArtifactsRoot/build/$LibraryRuntime/$LibraryName"
+SourceDir="$RepoRoot/sources/ffmpeg"
+BuildDir="$ArtifactsRoot/build/$LibraryRuntime/$PackageName.nupkg"
 InstallRoot="$ArtifactsRoot/install"
 InstallDir="$InstallRoot/$LibraryRuntime"
+PackagesDir="$ArtifactsRoot/packages"
 
-MakeDirectory "$ArtifactsRoot" "$BuildDir" "$InstallDir"
+MakeDirectory "$ArtifactsRoot" "$BuildDir" "$InstallRoot" "$InstallDir" "$PackagesDir"
 
-sudo apt-get update
-sudo apt-get -y install python3-pip
-pip3 install --user meson
-
-pushd "$BuildDir"
-
-export PATH="$InstallRoot/native/bin:$PATH"
-
-echo "$ScriptName: Configuring build $LibraryName in $BuildDir..."
-meson setup -Denable_tests=false -Denable_docs=false --buildtype=release --default-library=static "$SourceDir/libvmaf" --prefix "$InstallDir" --bindir="$InstallDir/bin" --libdir="$InstallDir/lib"
+echo "$ScriptName: Calculating $LibraryName package version..."
+PackageVersion=$(dotnet gitversion /output json /showvariable NuGetVersion)
 LAST_EXITCODE=$?
 if [ $LAST_EXITCODE != 0 ]; then
-  echo "$ScriptName: Failed to configure build for $LibraryName in $BuildDir."
+  echo "$ScriptName: Failed to calculate $LibraryName package version."
   exit "$LAST_EXITCODE"
 fi
 
-echo "$ScriptName: Building $LibraryName in $BuildDir..."
-ninja
+echo "$ScriptName: Producing $LibraryName runtime package folder structure in $BuildDir..."
+MakeDirectory "$BuildDir"
+cp -dR "$RepoRoot/packages/$PackageName/." "$BuildDir"
+cp -d "$SourceDir/LICENSE.md" "$BuildDir"
+cp -d "$SourceDir/README.md" "$BuildDir"
+mkdir -p "$BuildDir/runtimes/$LibraryRuntime/native" \
+  && cp -d "$InstallDir/lib/libavcodec.so"* $_ \
+  && cp -d "$InstallDir/lib/libavdevice.so"* $_ \
+  && cp -d "$InstallDir/lib/libavfilter.so"* $_ \
+  && cp -d "$InstallDir/lib/libavformat.so"* $_ \
+  && cp -d "$InstallDir/lib/libavutil.so"* $_ \
+  && cp -d "$InstallDir/lib/libpostproc.so"* $_ \
+  && cp -d "$InstallDir/lib/libswresample.so"* $_ \
+  && cp -d "$InstallDir/lib/libswscale.so"* $_
+
+echo "$ScriptName: Building $LibraryName runtime package..."
+nuget pack "$BuildDir/$PackageName.nuspec" -Properties "version=$PackageVersion" -OutputDirectory $PackagesDir
 LAST_EXITCODE=$?
 if [ $LAST_EXITCODE != 0 ]; then
-  echo "$ScriptName: Failed to build $LibraryName in $BuildDir."
+  echo "$ScriptName: Failed to build $LibraryName runtime package."
   exit "$LAST_EXITCODE"
 fi
-
-echo "$ScriptName: Installing $LibraryName in $InstallDir..."
-ninja install
-LAST_EXITCODE=$?
-if [ $LAST_EXITCODE != 0 ]; then
-  echo "$ScriptName: Failed to install $LibraryName in $InstallDir."
-  exit "$LAST_EXITCODE"
-fi
-
-popd

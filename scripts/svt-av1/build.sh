@@ -66,7 +66,7 @@ LibraryName='svt-av1'
 
 LibraryRuntime="linux-$Architecture"
 
-RepoRoot="$ScriptRoot/.."
+RepoRoot="$ScriptRoot/../.."
 ArtifactsRoot="$RepoRoot/artifacts"
 SourceDir="$RepoRoot/sources/$LibraryName"
 BuildDir="$ArtifactsRoot/build/$LibraryRuntime/$LibraryName"

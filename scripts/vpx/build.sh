@@ -62,11 +62,11 @@ if [[ -z "$Architecture" ]]; then
   exit 1
 fi
 
-LibraryName='x265'
+LibraryName="vpx"
 
 LibraryRuntime="linux-$Architecture"
 
-RepoRoot="$ScriptRoot/.."
+RepoRoot="$ScriptRoot/../.."
 ArtifactsRoot="$RepoRoot/artifacts"
 SourceDir="$RepoRoot/sources/$LibraryName"
 BuildDir="$ArtifactsRoot/build/$LibraryRuntime/$LibraryName"
@@ -75,15 +75,12 @@ InstallDir="$InstallRoot/$LibraryRuntime"
 
 MakeDirectory "$ArtifactsRoot" "$BuildDir" "$InstallDir"
 
-sudo apt-get update
-sudo apt-get -y install libnuma-dev
-
 pushd "$BuildDir"
 
-export PATH="$InstallRoot/native/bin:$PATH"
+export PATH="$InstallRoot/bin:$PATH"
 
 echo "$ScriptName: Configuring build for $LibraryName in $BuildDir..."
-cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX="$InstallDir" -DENABLE_SHARED=off "$SourceDir/source"
+"$SourceDir/configure" --prefix="$InstallDir" --disable-examples --disable-unit-tests --enable-vp9-highbitdepth --enable-pic --as=yasm
 LAST_EXITCODE=$?
 if [ $LAST_EXITCODE != 0 ]; then
   echo "$ScriptName: Failed to configure build for $LibraryName in $BuildDir."
@@ -102,7 +99,7 @@ echo "$ScriptName: Installing $LibraryName in $InstallDir..."
 make install
 LAST_EXITCODE=$?
 if [ $LAST_EXITCODE != 0 ]; then
-  echo "$ScriptName: Failed to install $LibraryName version in $InstallDir."
+  echo "$ScriptName: Failed to install $LibraryName in $InstallDir."
   exit "$LAST_EXITCODE"
 fi
 

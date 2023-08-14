@@ -24,7 +24,7 @@ ScriptRoot="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 
 ScriptName=$(basename -s '.sh' "$SOURCE")
 
-RepoRoot="$ScriptRoot/.."
+RepoRoot="$ScriptRoot/../.."
 
 ArtifactsRoot="$RepoRoot/artifacts"
 DownloadDir="$ArtifactsRoot/downloads"

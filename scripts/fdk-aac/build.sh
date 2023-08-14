@@ -62,25 +62,37 @@ if [[ -z "$Architecture" ]]; then
   exit 1
 fi
 
-LibraryName="vpx"
+LibraryName='fdk-aac'
 
 LibraryRuntime="linux-$Architecture"
 
-RepoRoot="$ScriptRoot/.."
+RepoRoot="$ScriptRoot/../.."
 ArtifactsRoot="$RepoRoot/artifacts"
 SourceDir="$RepoRoot/sources/$LibraryName"
 BuildDir="$ArtifactsRoot/build/$LibraryRuntime/$LibraryName"
 InstallRoot="$ArtifactsRoot/install"
 InstallDir="$InstallRoot/$LibraryRuntime"
 
-MakeDirectory "$ArtifactsRoot" "$BuildDir" "$InstallDir"
+MakeDirectory "$ArtifactsRoot" "$BuildDir" "$InstallDir" 
+
+pushd "$SourceDir"
+
+echo "$ScriptName: Regenerating build system files of $LibraryName in $SourceDir..."
+autoreconf -fiv
+LAST_EXITCODE=$?
+if [ $LAST_EXITCODE != 0 ]; then
+  echo "$ScriptName: Failed to regenerate build system files of $LibraryName in $SourceDir."
+  exit "$LAST_EXITCODE"
+fi
+
+popd
 
 pushd "$BuildDir"
 
 export PATH="$InstallRoot/bin:$PATH"
 
 echo "$ScriptName: Configuring build for $LibraryName in $BuildDir..."
-"$SourceDir/configure" --prefix="$InstallDir" --disable-examples --disable-unit-tests --enable-vp9-highbitdepth --enable-pic --as=yasm
+"$SourceDir/configure" --prefix="$InstallDir" --disable-shared --with-pic
 LAST_EXITCODE=$?
 if [ $LAST_EXITCODE != 0 ]; then
   echo "$ScriptName: Failed to configure build for $LibraryName in $BuildDir."
@@ -99,7 +111,7 @@ echo "$ScriptName: Installing $LibraryName in $InstallDir..."
 make install
 LAST_EXITCODE=$?
 if [ $LAST_EXITCODE != 0 ]; then
-  echo "$ScriptName: Failed to install $LibraryName in $InstallDir."
+  echo "$ScriptName: Failed to install $LibraryName version in $InstallDir."
   exit "$LAST_EXITCODE"
 fi
 

@@ -63,7 +63,7 @@ if [[ -z "$Architecture" ]]; then
 fi
 
 echo "$ScriptName: Installing dotnet ..."
-$ScriptRoot/install-dotnet.sh
+$ScriptRoot/dotnet/install.sh
 LAST_EXITCODE=$?
 if [ $LAST_EXITCODE != 0 ]; then
   echo "$ScriptName: Failed to install dotnet."
@@ -71,7 +71,7 @@ if [ $LAST_EXITCODE != 0 ]; then
 fi
 
 echo "$ScriptName: Restoring dotnet tools ..."
-$ScriptRoot/restore-dotnet-tools.sh
+$ScriptRoot/dotnet/restore-tools.sh
 LAST_EXITCODE=$?
 if [ $LAST_EXITCODE != 0 ]; then
   echo "$ScriptName: Failed to restore dotnet tools."
@@ -79,7 +79,7 @@ if [ $LAST_EXITCODE != 0 ]; then
 fi
 
 echo "$ScriptName: Installing nuget..."
-$ScriptRoot/install-nuget.sh
+$ScriptRoot/nuget/install.sh
 LAST_EXITCODE=$?
 if [ $LAST_EXITCODE != 0 ]; then
   echo "$ScriptName: Failed to install nuget."
@@ -95,7 +95,7 @@ if [ $LAST_EXITCODE != 0 ]; then
 fi
 
 echo "$ScriptName: Building NASM..."
-$ScriptRoot/build-nasm.sh
+$ScriptRoot/nasm/build.sh
 LAST_EXITCODE=$?
 if [ $LAST_EXITCODE != 0 ]; then
   echo "$ScriptName: Failed to build NASM."
@@ -103,7 +103,7 @@ if [ $LAST_EXITCODE != 0 ]; then
 fi
 
 echo "$ScriptName: Building libx264..."
-$ScriptRoot/build-libx264.sh --architecture $Architecture
+$ScriptRoot/x264/build.sh --architecture $Architecture
 LAST_EXITCODE=$?
 if [ $LAST_EXITCODE != 0 ]; then
   echo "$ScriptName: Failed to build libx264."
@@ -111,7 +111,7 @@ if [ $LAST_EXITCODE != 0 ]; then
 fi
 
 echo "$ScriptName: Building libx265..."
-$ScriptRoot/build-libx265.sh --architecture $Architecture
+$ScriptRoot/x265/build.sh --architecture $Architecture
 LAST_EXITCODE=$?
 if [ $LAST_EXITCODE != 0 ]; then
   echo "$ScriptName: Failed to build libx265."
@@ -119,7 +119,7 @@ if [ $LAST_EXITCODE != 0 ]; then
 fi
 
 echo "$ScriptName: Building libvpx..."
-$ScriptRoot/build-libvpx.sh --architecture $Architecture
+$ScriptRoot/vpx/build.sh --architecture $Architecture
 LAST_EXITCODE=$?
 if [ $LAST_EXITCODE != 0 ]; then
   echo "$ScriptName: Failed to build libvpx."
@@ -127,7 +127,7 @@ if [ $LAST_EXITCODE != 0 ]; then
 fi
 
 echo "$ScriptName: Building libfdk-aac..."
-$ScriptRoot/build-libfdk-aac.sh --architecture $Architecture
+$ScriptRoot/fdk-aac/build.sh --architecture $Architecture
 LAST_EXITCODE=$?
 if [ $LAST_EXITCODE != 0 ]; then
   echo "$ScriptName: Failed to build libfdk-aac."
@@ -135,7 +135,7 @@ if [ $LAST_EXITCODE != 0 ]; then
 fi
 
 echo "$ScriptName: Building libopus..."
-$ScriptRoot/build-libopus.sh --architecture $Architecture
+$ScriptRoot/opus/build.sh --architecture $Architecture
 LAST_EXITCODE=$?
 if [ $LAST_EXITCODE != 0 ]; then
   echo "$ScriptName: Failed to build libopus."
@@ -143,7 +143,7 @@ if [ $LAST_EXITCODE != 0 ]; then
 fi
 
 echo "$ScriptName: Building libaom..."
-$ScriptRoot/build-libaom.sh --architecture $Architecture
+$ScriptRoot/aom/build.sh --architecture $Architecture
 LAST_EXITCODE=$?
 if [ $LAST_EXITCODE != 0 ]; then
   echo "$ScriptName: Failed to build libaom."
@@ -151,7 +151,7 @@ if [ $LAST_EXITCODE != 0 ]; then
 fi
 
 echo "$ScriptName: Building libsvt-av1..."
-$ScriptRoot/build-libsvt-av1.sh --architecture $Architecture
+$ScriptRoot/svt-av1/build.sh --architecture $Architecture
 LAST_EXITCODE=$?
 if [ $LAST_EXITCODE != 0 ]; then
   echo "$ScriptName: Failed to build libsvt-av1."
@@ -159,7 +159,7 @@ if [ $LAST_EXITCODE != 0 ]; then
 fi
 
 echo "$ScriptName: Building libdav1d..."
-$ScriptRoot/build-libdav1d.sh --architecture $Architecture
+$ScriptRoot/dav1d/build.sh --architecture $Architecture
 LAST_EXITCODE=$?
 if [ $LAST_EXITCODE != 0 ]; then
   echo "$ScriptName: Failed to build libdav1d."
@@ -167,7 +167,7 @@ if [ $LAST_EXITCODE != 0 ]; then
 fi
 
 echo "$ScriptName: Building libvmaf..."
-$ScriptRoot/build-libvmaf.sh --architecture $Architecture
+$ScriptRoot/vmaf/build.sh --architecture $Architecture
 LAST_EXITCODE=$?
 if [ $LAST_EXITCODE != 0 ]; then
   echo "$ScriptName: Failed to build libvmaf."
@@ -175,7 +175,7 @@ if [ $LAST_EXITCODE != 0 ]; then
 fi
 
 echo "$ScriptName: Building FFmpeg..."
-$ScriptRoot/build-ffmpeg.sh --architecture $Architecture
+$ScriptRoot/ffmpeg/build.sh --architecture $Architecture
 LAST_EXITCODE=$?
 if [ $LAST_EXITCODE != 0 ]; then
   echo "$ScriptName: Failed to build FFmpeg."
@@ -183,7 +183,7 @@ if [ $LAST_EXITCODE != 0 ]; then
 fi
 
 echo "$ScriptName: Packing FFmpeg..."
-$ScriptRoot/pack-ffmpeg.sh --architecture $Architecture
+$ScriptRoot/ffmpeg/pack.sh --architecture $Architecture
 LAST_EXITCODE=$?
 if [ $LAST_EXITCODE != 0 ]; then
   echo "$ScriptName: Failed to pack FFmpeg."

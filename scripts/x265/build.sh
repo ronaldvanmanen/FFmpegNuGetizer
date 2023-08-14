@@ -62,37 +62,28 @@ if [[ -z "$Architecture" ]]; then
   exit 1
 fi
 
-LibraryName='fdk-aac'
+LibraryName='x265'
 
 LibraryRuntime="linux-$Architecture"
 
-RepoRoot="$ScriptRoot/.."
+RepoRoot="$ScriptRoot/../.."
 ArtifactsRoot="$RepoRoot/artifacts"
 SourceDir="$RepoRoot/sources/$LibraryName"
 BuildDir="$ArtifactsRoot/build/$LibraryRuntime/$LibraryName"
 InstallRoot="$ArtifactsRoot/install"
 InstallDir="$InstallRoot/$LibraryRuntime"
 
-MakeDirectory "$ArtifactsRoot" "$BuildDir" "$InstallDir" 
+MakeDirectory "$ArtifactsRoot" "$BuildDir" "$InstallDir"
 
-pushd "$SourceDir"
-
-echo "$ScriptName: Regenerating build system files of $LibraryName in $SourceDir..."
-autoreconf -fiv
-LAST_EXITCODE=$?
-if [ $LAST_EXITCODE != 0 ]; then
-  echo "$ScriptName: Failed to regenerate build system files of $LibraryName in $SourceDir."
-  exit "$LAST_EXITCODE"
-fi
-
-popd
+sudo apt-get update
+sudo apt-get -y install libnuma-dev
 
 pushd "$BuildDir"
 
-export PATH="$InstallRoot/bin:$PATH"
+export PATH="$InstallRoot/native/bin:$PATH"
 
 echo "$ScriptName: Configuring build for $LibraryName in $BuildDir..."
-"$SourceDir/configure" --prefix="$InstallDir" --disable-shared --with-pic
+cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX="$InstallDir" -DENABLE_SHARED=off "$SourceDir/source"
 LAST_EXITCODE=$?
 if [ $LAST_EXITCODE != 0 ]; then
   echo "$ScriptName: Failed to configure build for $LibraryName in $BuildDir."

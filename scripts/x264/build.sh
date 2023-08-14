@@ -62,47 +62,46 @@ if [[ -z "$Architecture" ]]; then
   exit 1
 fi
 
-LibraryName="FFmpeg"
-LibraryRuntime="linux-$Architecture"
-PackageName="$LibraryName.runtime.$LibraryRuntime"
+LibraryName='x264'
 
-RepoRoot="$ScriptRoot/.."
+LibraryRuntime="linux-$Architecture"
+
+RepoRoot="$ScriptRoot/../.."
 ArtifactsRoot="$RepoRoot/artifacts"
 SourceDir="$RepoRoot/sources/$LibraryName"
-BuildDir="$ArtifactsRoot/build/$LibraryRuntime/$PackageName.nupkg"
+DownloadDir="$ArtifactsRoot/downloads"
+BuildDir="$ArtifactsRoot/build/$LibraryRuntime/$LibraryName"
 InstallRoot="$ArtifactsRoot/install"
 InstallDir="$InstallRoot/$LibraryRuntime"
-PackagesDir="$ArtifactsRoot/packages"
 
-MakeDirectory "$ArtifactsRoot" "$BuildDir" "$InstallRoot" "$InstallDir" "$PackagesDir"
+MakeDirectory "$ArtifactsRoot" "$DownloadDir" "$InstallDir" "$BuildDir"
 
-echo "$ScriptName: Calculating $LibraryName package version..."
-PackageVersion=$(dotnet gitversion /output json /showvariable NuGetVersion)
+pushd "$BuildDir"
+
+export PATH="$InstallRoot/native/bin:$PATH"
+
+echo "$ScriptName: Configuring build for $LibraryName in $BuildDir..."
+"$SourceDir/configure" --prefix="$InstallDir" --enable-static --enable-pic
 LAST_EXITCODE=$?
 if [ $LAST_EXITCODE != 0 ]; then
-  echo "$ScriptName: Failed to calculate $LibraryName package version."
+  echo "$ScriptName: Failed to configure build for $LibraryName in $BuildDir."
   exit "$LAST_EXITCODE"
 fi
 
-echo "$ScriptName: Producing $LibraryName runtime package folder structure in $BuildDir..."
-MakeDirectory "$BuildDir"
-cp -dR "$RepoRoot/packages/$PackageName/." "$BuildDir"
-cp -d "$SourceDir/LICENSE.md" "$BuildDir"
-cp -d "$SourceDir/README.md" "$BuildDir"
-mkdir -p "$BuildDir/runtimes/$LibraryRuntime/native" \
-  && cp -d "$InstallDir/lib/libavcodec.so"* $_ \
-  && cp -d "$InstallDir/lib/libavdevice.so"* $_ \
-  && cp -d "$InstallDir/lib/libavfilter.so"* $_ \
-  && cp -d "$InstallDir/lib/libavformat.so"* $_ \
-  && cp -d "$InstallDir/lib/libavutil.so"* $_ \
-  && cp -d "$InstallDir/lib/libpostproc.so"* $_ \
-  && cp -d "$InstallDir/lib/libswresample.so"* $_ \
-  && cp -d "$InstallDir/lib/libswscale.so"* $_
-
-echo "$ScriptName: Building $LibraryName runtime package..."
-nuget pack "$BuildDir/$PackageName.nuspec" -Properties "version=$PackageVersion" -OutputDirectory $PackagesDir
+echo "$ScriptName: Building $LibraryName in $BuildDir..."
+make
 LAST_EXITCODE=$?
 if [ $LAST_EXITCODE != 0 ]; then
-  echo "$ScriptName: Failed to build $LibraryName runtime package."
+  echo "$ScriptName: Failed to build $LibraryName in $BuildDir."
   exit "$LAST_EXITCODE"
 fi
+
+echo "$ScriptName: Installing $LibraryName in $InstallDir..."
+make install
+LAST_EXITCODE=$?
+if [ $LAST_EXITCODE != 0 ]; then
+  echo "$ScriptName: Failed to install $LibraryName in $InstallDir."
+  exit "$LAST_EXITCODE"
+fi
+
+popd

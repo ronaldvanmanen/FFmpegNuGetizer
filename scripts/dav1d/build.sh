@@ -62,26 +62,29 @@ if [[ -z "$Architecture" ]]; then
   exit 1
 fi
 
-LibraryName='x264'
+LibraryName='dav1d'
 
 LibraryRuntime="linux-$Architecture"
 
-RepoRoot="$ScriptRoot/.."
+RepoRoot="$ScriptRoot/../.."
 ArtifactsRoot="$RepoRoot/artifacts"
 SourceDir="$RepoRoot/sources/$LibraryName"
-DownloadDir="$ArtifactsRoot/downloads"
 BuildDir="$ArtifactsRoot/build/$LibraryRuntime/$LibraryName"
 InstallRoot="$ArtifactsRoot/install"
 InstallDir="$InstallRoot/$LibraryRuntime"
 
-MakeDirectory "$ArtifactsRoot" "$DownloadDir" "$InstallDir" "$BuildDir"
+MakeDirectory "$ArtifactsRoot" "$BuildDir" "$InstallDir"
+
+sudo apt-get update
+sudo apt-get -y install python3-pip
+pip3 install --user meson
 
 pushd "$BuildDir"
 
 export PATH="$InstallRoot/native/bin:$PATH"
 
-echo "$ScriptName: Configuring build for $LibraryName in $BuildDir..."
-"$SourceDir/configure" --prefix="$InstallDir" --enable-static --enable-pic
+echo "$ScriptName: Configuring build $LibraryName in $BuildDir..."
+meson setup -Denable_tools=false -Denable_tests=false --default-library=static "$SourceDir" --prefix "$InstallDir" --libdir="$InstallDir/lib"
 LAST_EXITCODE=$?
 if [ $LAST_EXITCODE != 0 ]; then
   echo "$ScriptName: Failed to configure build for $LibraryName in $BuildDir."
@@ -89,7 +92,7 @@ if [ $LAST_EXITCODE != 0 ]; then
 fi
 
 echo "$ScriptName: Building $LibraryName in $BuildDir..."
-make
+ninja
 LAST_EXITCODE=$?
 if [ $LAST_EXITCODE != 0 ]; then
   echo "$ScriptName: Failed to build $LibraryName in $BuildDir."
@@ -97,7 +100,7 @@ if [ $LAST_EXITCODE != 0 ]; then
 fi
 
 echo "$ScriptName: Installing $LibraryName in $InstallDir..."
-make install
+ninja install
 LAST_EXITCODE=$?
 if [ $LAST_EXITCODE != 0 ]; then
   echo "$ScriptName: Failed to install $LibraryName in $InstallDir."
