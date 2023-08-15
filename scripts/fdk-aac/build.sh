@@ -75,24 +75,28 @@ InstallDir="$InstallRoot/$LibraryRuntime"
 
 MakeDirectory "$ArtifactsRoot" "$BuildDir" "$InstallDir" 
 
-pushd "$SourceDir"
-
-echo "$ScriptName: Regenerating build system files of $LibraryName in $SourceDir..."
-autoreconf -fiv
-LAST_EXITCODE=$?
-if [ $LAST_EXITCODE != 0 ]; then
-  echo "$ScriptName: Failed to regenerate build system files of $LibraryName in $SourceDir."
-  exit "$LAST_EXITCODE"
-fi
-
-popd
+export PATH="$InstallRoot/bin:$PATH"
 
 pushd "$BuildDir"
 
-export PATH="$InstallRoot/bin:$PATH"
+echo "$ScriptName: Cloning $LibraryName in $BuildDir..."
+git clone "$SourceDir" .
+LAST_EXITCODE=$?
+if [ $LAST_EXITCODE != 0 ]; then
+  echo "$ScriptName: Failed to clone $LibraryName in $BuildDir."
+  exit "$LAST_EXITCODE"
+fi
+
+echo "$ScriptName: Regenerating build system files of $LibraryName in $BuildDir..."
+autoreconf -fiv
+LAST_EXITCODE=$?
+if [ $LAST_EXITCODE != 0 ]; then
+  echo "$ScriptName: Failed to regenerate build system files of $LibraryName in $BuildDir."
+  exit "$LAST_EXITCODE"
+fi
 
 echo "$ScriptName: Configuring build for $LibraryName in $BuildDir..."
-"$SourceDir/configure" --prefix="$InstallDir" --disable-shared --with-pic
+./configure --prefix="$InstallDir" --disable-shared --with-pic
 LAST_EXITCODE=$?
 if [ $LAST_EXITCODE != 0 ]; then
   echo "$ScriptName: Failed to configure build for $LibraryName in $BuildDir."
