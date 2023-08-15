@@ -29,7 +29,7 @@ LibraryName="nasm"
 RepoRoot="$ScriptRoot/../.."
 ArtifactsRoot="$RepoRoot/artifacts"
 SourceDir="$RepoRoot/sources/$LibraryName"
-BuildDir="$ArtifactsRoot/build/$LibraryName"
+BuildDir="$ArtifactsRoot/build/native/$LibraryName"
 InstallDir="$ArtifactsRoot/install/native"
 
 MakeDirectory "$ArtifactsRoot" "$BuildDir" "$InstallDir"
