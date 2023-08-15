@@ -51,7 +51,7 @@ fi
 pushd "$BuildDir"
 
 echo "$ScriptName: Cloning $LibraryName in $BuildDir..."
-git clone "$SourceDir" .
+git clone "$SourceDir" . 2> /dev/null || git reset --hard && git clean -xfd
 LAST_EXITCODE=$?
 if [ $LAST_EXITCODE != 0 ]; then
   echo "$ScriptName: Failed to clone $LibraryName in $BuildDir."
