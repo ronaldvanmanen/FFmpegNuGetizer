@@ -86,14 +86,6 @@ if [ $LAST_EXITCODE != 0 ]; then
   exit "$LAST_EXITCODE"
 fi
 
-echo "$ScriptName: Installing dependencies needed to build FFmpeg..."
-$ScriptRoot/install-dependencies.sh
-LAST_EXITCODE=$?
-if [ $LAST_EXITCODE != 0 ]; then
-  echo "$ScriptName: Failed to install dependencies needed to build FFmpeg."
-  exit "$LAST_EXITCODE"
-fi
-
 echo "$ScriptName: Building NASM..."
 $ScriptRoot/nasm/build.sh
 LAST_EXITCODE=$?

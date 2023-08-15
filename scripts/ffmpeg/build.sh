@@ -76,10 +76,39 @@ PackagesDir="$ArtifactsRoot/packages"
 
 MakeDirectory "$ArtifactsRoot" "$BuildDir" "$InstallRoot" "$InstallDir" "$PackagesDir"
 
-echo "$ScriptName: Configuring build for $LibraryName in $BuildDir..."
+echo "$ScriptName: Installing dependencies needed to build $LibraryName..."
+sudo apt-get update && sudo apt-get -y install \
+  build-essential \
+  git \
+  libass-dev \
+  libfreetype6-dev \
+  libgnutls28-dev \
+  libmp3lame-dev \
+  libsdl2-dev \
+  libtool \
+  libva-dev \
+  libvdpau-dev \
+  libvorbis-dev \
+  libxcb1-dev \
+  libxcb-shm0-dev \
+  libxcb-xfixes0-dev \
+  pkg-config \
+  texinfo \
+  yasm \
+  zlib1g-dev
+LAST_EXITCODE=$?
+if [ $LAST_EXITCODE != 0 ]; then
+  echo "$ScriptName: Failed to install dependencies needed to build $LibraryName."
+  exit "$LAST_EXITCODE"
+fi
+
 pushd "$BuildDir"
+
 export PATH="$InstallRoot/native/bin:$PATH"
+
 export PKG_CONFIG_PATH="$InstallDir/lib/pkgconfig"
+
+echo "$ScriptName: Configuring build for $LibraryName in $BuildDir..."
 "$SourceDir/configure" \
   --enable-gpl \
   --enable-libx264 \
@@ -104,24 +133,21 @@ if [ $LAST_EXITCODE != 0 ]; then
   echo "$ScriptName: Failed to configure build for $LibraryName in $BuildDir."
   exit "$LAST_EXITCODE"
 fi
-popd
 
 echo "$ScriptName: Building $LibraryName in $BuildDir..."
-pushd "$BuildDir"
 make
 LAST_EXITCODE=$?
 if [ $LAST_EXITCODE != 0 ]; then
   echo "$ScriptName: Failed to build $LibraryName in $BuildDir."
   exit "$LAST_EXITCODE"
 fi
-popd
 
 echo "$ScriptName: Installing $LibraryName to $InstallDir..."
-pushd "$BuildDir"
 make install
 LAST_EXITCODE=$?
 if [ $LAST_EXITCODE != 0 ]; then
   echo "$ScriptName: Failed to install $LibraryName version in $InstallDir."
   exit "$LAST_EXITCODE"
 fi
+
 popd

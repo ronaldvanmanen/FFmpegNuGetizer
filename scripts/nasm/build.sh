@@ -34,6 +34,20 @@ InstallDir="$ArtifactsRoot/install/native"
 
 MakeDirectory "$ArtifactsRoot" "$BuildDir" "$InstallDir"
 
+echo "$ScriptName: Installing dependencies needed to build $LibraryName..."
+sudo apt-get update && sudo apt-get -y install \
+  asciidoc \
+  autoconf \
+  automake \
+  build-essential \
+  git \
+  xmlto
+LAST_EXITCODE=$?
+if [ $LAST_EXITCODE != 0 ]; then
+  echo "$ScriptName: Failed to install dependencies needed to build $LibraryName."
+  exit "$LAST_EXITCODE"
+fi
+
 pushd "$BuildDir"
 
 echo "$ScriptName: Cloning $LibraryName in $BuildDir..."

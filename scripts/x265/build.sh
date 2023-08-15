@@ -75,8 +75,19 @@ InstallDir="$InstallRoot/$LibraryRuntime"
 
 MakeDirectory "$ArtifactsRoot" "$BuildDir" "$InstallDir"
 
-sudo apt-get update
-sudo apt-get -y install libnuma-dev
+
+echo "$ScriptName: Installing dependencies needed to build $LibraryName..."
+sudo apt-get update && sudo apt-get -y install \
+  build-essential \
+  cmake \
+  git \
+  libnuma-dev \
+  nasm
+LAST_EXITCODE=$?
+if [ $LAST_EXITCODE != 0 ]; then
+  echo "$ScriptName: Failed to install dependencies needed to build $LibraryName."
+  exit "$LAST_EXITCODE"
+fi
 
 pushd "$BuildDir"
 

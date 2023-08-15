@@ -75,6 +75,18 @@ InstallDir="$InstallRoot/$LibraryRuntime"
 
 MakeDirectory "$ArtifactsRoot" "$BuildDir" "$InstallDir" 
 
+echo "$ScriptName: Installing dependencies needed to build $LibraryName..."
+sudo apt-get update && sudo apt-get -y install \
+  autoconf \
+  automake \
+  build-essential \
+  git
+LAST_EXITCODE=$?
+if [ $LAST_EXITCODE != 0 ]; then
+  echo "$ScriptName: Failed to install dependencies needed to build $LibraryName."
+  exit "$LAST_EXITCODE"
+fi
+
 export PATH="$InstallRoot/bin:$PATH"
 
 pushd "$BuildDir"

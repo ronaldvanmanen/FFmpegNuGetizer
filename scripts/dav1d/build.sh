@@ -75,9 +75,19 @@ InstallDir="$InstallRoot/$LibraryRuntime"
 
 MakeDirectory "$ArtifactsRoot" "$BuildDir" "$InstallDir"
 
-sudo apt-get update
-sudo apt-get -y install python3-pip
-pip3 install --user meson
+echo "$ScriptName: Installing dependencies needed to build $LibraryName..."
+sudo apt-get update \
+  && sudo apt-get -y install \
+    build-essential \
+    ninja-build \
+    nasm \
+    python3-pip \
+  && pip3 install --user meson
+LAST_EXITCODE=$?
+if [ $LAST_EXITCODE != 0 ]; then
+  echo "$ScriptName: Failed to install dependencies needed to build $LibraryName."
+  exit "$LAST_EXITCODE"
+fi
 
 pushd "$BuildDir"
 
