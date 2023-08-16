@@ -1,0 +1,33 @@
+[submodule "sources/FFmpeg"]
+	path = sources/ffmpeg
+	url = https://github.com/FFmpeg/FFmpeg.git
+[submodule "sources/nasm"]
+	path = sources/nasm
+	url = https://github.com/netwide-assembler/nasm.git
+[submodule "sources/x264"]
+	path = sources/x264
+	url = https://code.videolan.org/videolan/x264.git
+[submodule "sources/x265"]
+	path = sources/x265
+	url = https://bitbucket.org/multicoreware/x265_git.git
+[submodule "sources/vpx"]
+	path = sources/vpx
+	url = https://chromium.googlesource.com/webm/libvpx.git
+[submodule "sources/fdk-aac"]
+	path = sources/fdk-aac
+	url = https://github.com/mstorsjo/fdk-aac.git
+[submodule "sources/opus"]
+	path = sources/opus
+	url = https://github.com/xiph/opus.git
+[submodule "sources/aom"]
+	path = sources/aom
+	url = https://aomedia.googlesource.com/aom
+[submodule "sources/svt-av1"]
+	path = sources/svt-av1
+	url = https://gitlab.com/AOMediaCodec/SVT-AV1.git
+[submodule "sources/dav1d"]
+	path = sources/dav1d
+	url = https://code.videolan.org/videolan/dav1d.git
+[submodule "sources/vmaf"]
+	path = sources/vmaf
+	url = https://github.com/Netflix/vmaf.git
