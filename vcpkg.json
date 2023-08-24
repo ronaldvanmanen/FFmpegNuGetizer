@@ -1,0 +1,20 @@
+{
+    "dependencies": [
+        {
+            "name": "ffmpeg",
+            "default-features": false,
+            "features": [
+                "avcodec",
+                "avdevice",
+                "avfilter",
+                "avformat",
+                "swresample",
+                "swscale"
+            ]
+        }
+    ],
+    "overrides": [
+        { "name": "ffmpeg", "version": "4.4.3" }
+    ],
+    "builtin-baseline": "927bc12e31148b0d44ae9d174b96c20e3bcf08eb"
+}

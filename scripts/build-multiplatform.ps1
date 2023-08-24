@@ -20,58 +20,34 @@ try {
 
   $RepoRoot = Join-Path -Path $PSScriptRoot -ChildPath ".."
 
-  $SourceRoot = Join-Path -Path $RepoRoot -ChildPath "sources"
-
   $ArtifactsRoot = Join-Path -Path $RepoRoot -ChildPath "artifacts"
+
   New-Directory -Path $ArtifactsRoot
 
-  $BuildRoot = Join-Path -Path $ArtifactsRoot -ChildPath "build"
-  New-Directory -Path $BuildRoot
+  $NuGetPackageName = "FFmpeg"
+  $NuGetArtifactsRoot = Join-Path $ArtifactsRoot -ChildPath "nuget"
+  $NuGetBuildRoot = Join-Path $NuGetArtifactsRoot -ChildPath "build"
+  $NuGetBuildDir = Join-Path $NuGetBuildRoot -ChildPath $NuGetPackageName
+  $NuGetInstallRoot = Join-Path $NuGetArtifactsRoot -ChildPath "installed"
+  
+  New-Directory -Path $NuGetArtifactsRoot, $NuGetBuildRoot, $NuGetInstallRoot
 
-  $PackageRoot = Join-Path $ArtifactsRoot -ChildPath "packages"
-  New-Directory -Path $PackageRoot
-
-  $DotNetInstallScriptUri = "https://dot.net/v1/dotnet-install.ps1"
-  Write-Host "${ScriptName}: Downloading dotnet-install.ps1 script from $DotNetInstallScriptUri..." -ForegroundColor Yellow
-  $DotNetInstallScript = Join-Path -Path $ArtifactsRoot -ChildPath "dotnet-install.ps1"
-  Invoke-WebRequest -Uri $DotNetInstallScriptUri -OutFile $DotNetInstallScript -UseBasicParsing
-
-  Write-Host "${ScriptName}: Installing dotnet 6.0..." -ForegroundColor Yellow
-  $DotNetInstallDirectory = Join-Path -Path $ArtifactsRoot -ChildPath "dotnet"
-  New-Directory -Path $DotNetInstallDirectory
-
-  $env:DOTNET_CLI_TELEMETRY_OPTOUT = 1
-  $env:DOTNET_MULTILEVEL_LOOKUP = 0
-  $env:DOTNET_SKIP_FIRST_TIME_EXPERIENCE = 1
-
-  # & $DotNetInstallScript -Channel 6.0 -Version latest -InstallDir $DotNetInstallDirectory
-
-  $env:PATH="$DotNetInstallDirectory;$env:PATH"
-
-  Write-Host "${ScriptName}: Restoring dotnet tools..." -ForegroundColor Yellow
-  & dotnet tool restore
+  Write-Host "${ScriptName}: Determining NuGet version for FFmpeg multi-platform package..." -ForegroundColor Yellow
+  $NuGetPackageVersion = dotnet gitversion /showvariable NuGetVersion /output json
   if ($LastExitCode -ne 0) {
-    throw "${ScriptName}: Failed restore dotnet tools."
+    throw "${ScriptName}: Failed determine NuGet version for FFmpeg multi-platform package."
   }
 
-  Write-Host "${ScriptName}: Calculating NuGet version for FFmpeg..." -ForegroundColor Yellow
-  $NuGetVersion = dotnet gitversion /showvariable NuGetVersion /output json
-  if ($LastExitCode -ne 0) {
-    throw "${ScriptName}: Failed calculate NuGet version for FFmpeg."
-  }
+  Write-Host "${ScriptName}: Producing FFmpeg multi-platform package folder structure..." -ForegroundColor Yellow
+  Copy-File -Path "$RepoRoot\packages\FFmpeg\*" -Destination $NuGetBuildDir -Force -Recurse
 
-  $BuildDir = Join-Path -Path $BuildRoot -ChildPath "FFmpeg.nupkg"
-
-  Write-Host "${ScriptName}: Producing FFmpeg multi-platform package folder structure in $BuildDir..." -ForegroundColor Yellow
-  Copy-File -Path "$RepoRoot\packages\FFmpeg\*" -Destination $BuildDir -Force -Recurse
-
-  Write-Host "${ScriptName}: Replacing variable `$version`$ in runtime.json with value '$NuGetVersion'..." -ForegroundColor Yellow
-  $RuntimeContent = Get-Content $BuildDir\runtime.json -Raw
-  $RuntimeContent = $RuntimeContent.replace('$version$', $NuGetVersion)
-  Set-Content $BuildDir\runtime.json $RuntimeContent
+  Write-Host "${ScriptName}: Replacing variable `$version`$ in runtime.json with value '$NuGetPackageVersion'..." -ForegroundColor Yellow
+  $RuntimeContent = Get-Content $NuGetBuildDir\runtime.json -Raw
+  $RuntimeContent = $RuntimeContent.replace('$version$', $NuGetPackageVersion)
+  Set-Content $NuGetBuildDir\runtime.json $RuntimeContent
 
   Write-Host "${ScriptName}: Building FFmpeg multi-platform package..." -ForegroundColor Yellow
-  & nuget pack $BuildDir\FFmpeg.nuspec -Properties version=$NuGetVersion -OutputDirectory $PackageRoot
+  & nuget pack $NuGetBuildDir\FFmpeg.nuspec -Properties version=$NuGetPackageVersion -OutputDirectory $NuGetInstallRoot
   if ($LastExitCode -ne 0) {
     throw "${ScriptName}: Failed to build FFmpeg multi-platform package."
   }
