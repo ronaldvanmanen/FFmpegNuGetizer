@@ -60,13 +60,10 @@ try {
     throw "${ScriptName}: Failed calculate NuGet version for FFmpeg."
   }
 
-  $SourceDir = Join-Path -Path $SourceRoot -ChildPath "FFmpeg"
   $BuildDir = Join-Path -Path $BuildRoot -ChildPath "FFmpeg.nupkg"
 
   Write-Host "${ScriptName}: Producing FFmpeg multi-platform package folder structure in $BuildDir..." -ForegroundColor Yellow
   Copy-File -Path "$RepoRoot\packages\FFmpeg\*" -Destination $BuildDir -Force -Recurse
-  Copy-File -Path "$SourceDir\LICENSE.md" $BuildDir
-  Copy-File -Path "$SourceDir\README.md" $BuildDir
 
   Write-Host "${ScriptName}: Replacing variable `$version`$ in runtime.json with value '$NuGetVersion'..." -ForegroundColor Yellow
   $RuntimeContent = Get-Content $BuildDir\runtime.json -Raw
