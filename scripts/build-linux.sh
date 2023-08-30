@@ -75,7 +75,6 @@ ArtifactsRoot="$RepoRoot/artifacts"
 
 MakeDirectory "$ArtifactsRoot"
 
-VcpkgOverlayTripletsRoot="$RepoRoot/vcpkg-triplets"
 VcpkgArtifactsRoot="$ArtifactsRoot/vcpkg"
 VcpkgBuildtreesRoot="$VcpkgArtifactsRoot/buildtrees"
 VcpkgDownloadsRoot="$VcpkgArtifactsRoot/downloads"
@@ -104,7 +103,6 @@ fi
 echo "$ScriptName: Building FFmpeg using vcpkg..."
 ./vcpkg/vcpkg install \
   --triplet="$VcpkgTriplet" \
-  --overlay-triplets="$VcpkgOverlayTripletsRoot" \
   --downloads-root="$VcpkgDownloadsRoot" \
   --x-buildtrees-root="$VcpkgBuildtreesRoot" \
   --x-install-root="$VcpkgInstallRoot" \

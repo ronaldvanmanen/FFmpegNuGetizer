@@ -60,7 +60,6 @@ try {
 
   New-Directory -Path $ArtifactsRoot
 
-  $VcpkgOverlayTripletsRoot = Join-Path $RepoRoot -ChildPath "vcpkg-triplets"
   $VcpkgArtifactsRoot = Join-Path $ArtifactsRoot -ChildPath "vcpkg"
   $VcpkgBuildtreesRoot = Join-Path $VcpkgArtifactsRoot -ChildPath "buildtrees"
   $VcpkgDownloadsRoot = Join-Path $VcpkgArtifactsRoot -ChildPath "downloads"
@@ -87,7 +86,6 @@ try {
   Write-Host "${ScriptName}: Building FFmpeg using vcpkg..."
   .\vcpkg\vcpkg install `
     --triplet="$VcpkgTriplet" `
-    --overlay-triplets="$VcpkgOverlayTripletsRoot" `
     --downloads-root="$VcpkgDownloadsRoot" `
     --x-buildtrees-root="$VcpkgBuildtreesRoot" `
     --x-install-root="$VcpkgInstallRoot" `
