@@ -37,6 +37,12 @@ jobs:
       shell: bash
     - run: sudo apt-get install nasm
       shell: bash
+    - run: >
+        dotnet nuget update source azure
+        --username GitHub
+        --password ${{ secrets.AZURE_DEVOPS_PAT }}
+        --store-password-in-clear-text
+      shell: bash
     - run: dotnet tool restore
       shell: bash
     - run: ./scripts/build-linux.sh --runtime ${{ matrix.platform.runtime }}
@@ -65,6 +71,12 @@ jobs:
         source-url: https://pkgs.dev.azure.com/ronaldvanmanen/FFmpegSharp/_packaging/FFmpegSharp/nuget/v3/index.json
       env:
         NUGET_AUTH_TOKEN: ${{ secrets.AZURE_DEVOPS_PAT }}
+    - run: >
+        dotnet nuget update source azure
+        --username GitHub
+        --password ${{ secrets.AZURE_DEVOPS_PAT }}
+        --store-password-in-clear-text
+      shell: cmd
     - run: dotnet tool restore
       shell: cmd
     - run: .\scripts\build-windows.cmd -runtime ${{ matrix.platform.runtime }}
@@ -85,6 +97,12 @@ jobs:
     - uses: nuget/setup-nuget@v1
       with:
         nuget-version: '6.x'
+    - run: >
+        dotnet nuget update source azure
+        --username GitHub
+        --password ${{ secrets.AZURE_DEVOPS_PAT }}
+        --store-password-in-clear-text
+      shell: cmd
     - run: dotnet tool restore
       shell: cmd
     - run: .\scripts\build-multiplatform.cmd
@@ -109,12 +127,16 @@ jobs:
         source-url: https://pkgs.dev.azure.com/ronaldvanmanen/FFmpegSharp/_packaging/FFmpegSharp/nuget/v3/index.json
       env:
         NUGET_AUTH_TOKEN: ${{ secrets.AZURE_DEVOPS_PAT }}
-    - run: dotnet nuget push "./artifacts/**/*.nupkg" --api-key AzureDevOps --skip-duplicate
+    - run: >
+        dotnet nuget push "./artifacts/**/*.nupkg"
+        --api-key AzureDevOps
+        --skip-duplicate
+      shell: bash
   publish-artifacts-on-github:
     name: Publish Artifacts on GitHub
     runs-on: ubuntu-latest
     permissions:
-      packages: write    
+      packages: write
     needs: [ build-linux, build-windows, build-multiplatform ]
     steps:
     - uses: actions/download-artifact@v3
@@ -127,4 +149,9 @@ jobs:
         source-url: https://nuget.pkg.github.com/ronaldvanmanen/index.json
       env:
         NUGET_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    - run: dotnet nuget push "./artifacts/**/*.nupkg" --source "https://nuget.pkg.github.com/ronaldvanmanen/index.json" --api-key ${{ secrets.GITHUB_TOKEN }} --skip-duplicate
+    - run: >
+        dotnet nuget push "./artifacts/**/*.nupkg"
+        --source "https://nuget.pkg.github.com/ronaldvanmanen/index.json"
+        --api-key ${{ secrets.GITHUB_TOKEN }}
+        --skip-duplicate
+      shell: bash
