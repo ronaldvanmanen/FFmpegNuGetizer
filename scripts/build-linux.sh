@@ -125,13 +125,13 @@ fi
 echo "$ScriptName: Building FFmpeg runtime package folder structure..."
 cp -dR "$RepoRoot/packages/$NuGetPackageName/." "$NuGetBuildDir"
 mkdir -p "$NuGetBuildDir/runtimes/$Runtime/native" \
-  && cp -d "$VcpkgInstallRoot/lib/libavcodec."* $_ \
-  && cp -d "$VcpkgInstallRoot/lib/libavdevice."* $_ \
-  && cp -d "$VcpkgInstallRoot/lib/libavfilter."* $_ \
-  && cp -d "$VcpkgInstallRoot/lib/libavformat."* $_ \
-  && cp -d "$VcpkgInstallRoot/lib/libavutil."* $_ \
-  && cp -d "$VcpkgInstallRoot/lib/libswresample."* $_ \
-  && cp -d "$VcpkgInstallRoot/lib/libswscale."* $_
+  && cp -d "$VcpkgInstallRoot/$VcpkgTriplet/lib/libavcodec.so"* $_ \
+  && cp -d "$VcpkgInstallRoot/$VcpkgTriplet/lib/libavdevice.so"* $_ \
+  && cp -d "$VcpkgInstallRoot/$VcpkgTriplet/lib/libavfilter.so"* $_ \
+  && cp -d "$VcpkgInstallRoot/$VcpkgTriplet/lib/libavformat.so"* $_ \
+  && cp -d "$VcpkgInstallRoot/$VcpkgTriplet/lib/libavutil.so"* $_ \
+  && cp -d "$VcpkgInstallRoot/$VcpkgTriplet/lib/libswresample.so"* $_ \
+  && cp -d "$VcpkgInstallRoot/$VcpkgTriplet/lib/libswscale.so"* $_
 
 echo "$ScriptName: Building FFmpeg runtime package..."
 nuget pack "$NuGetBuildDir/$NuGetPackageName.nuspec" -Properties "version=$NuGetPackageVersion" -OutputDirectory $NuGetInstallRoot
