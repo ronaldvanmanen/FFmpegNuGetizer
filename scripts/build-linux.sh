@@ -132,14 +132,6 @@ mkdir -p "$NuGetBuildDir/runtimes/$Runtime/native" \
   && cp -d "$VcpkgInstallRoot/$VcpkgTriplet/lib/libavutil.so"* $_ \
   && cp -d "$VcpkgInstallRoot/$VcpkgTriplet/lib/libswresample.so"* $_ \
   && cp -d "$VcpkgInstallRoot/$VcpkgTriplet/lib/libswscale.so"* $_
-mkdir -p "$NuGetBuildDir/build/native/include" \
-  && cp -dr "$VcpkgInstallRoot/$VcpkgTriplet/include/libavcodec" $_ \
-  && cp -dr "$VcpkgInstallRoot/$VcpkgTriplet/include/libavdevice" $_ \
-  && cp -dr "$VcpkgInstallRoot/$VcpkgTriplet/include/libavfilter" $_ \
-  && cp -dr "$VcpkgInstallRoot/$VcpkgTriplet/include/libavformat" $_ \
-  && cp -dr "$VcpkgInstallRoot/$VcpkgTriplet/include/libavutil" $_ \
-  && cp -dr "$VcpkgInstallRoot/$VcpkgTriplet/include/libswresample" $_ \
-  && cp -dr "$VcpkgInstallRoot/$VcpkgTriplet/include/libswscale" $_
 
 echo "$ScriptName: Building FFmpeg runtime package..."
 nuget pack "$NuGetBuildDir/$NuGetPackageName.nuspec" -Properties "version=$NuGetPackageVersion" -OutputDirectory $NuGetInstallRoot

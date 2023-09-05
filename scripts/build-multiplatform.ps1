@@ -39,7 +39,20 @@ try {
   }
 
   Write-Host "${ScriptName}: Producing FFmpeg multi-platform package folder structure..." -ForegroundColor Yellow
+
   Copy-File -Path "$RepoRoot\packages\FFmpeg\*" -Destination $NuGetBuildDir -Force -Recurse
+
+  $VcpkgTriplet="x86-windows-release"
+  $VcpkgArtifactsRoot = Join-Path $ArtifactsRoot -ChildPath "vcpkg"
+  $VcpkgInstallRoot = Join-Path $VcpkgArtifactsRoot -ChildPath "installed"
+
+  Copy-File -Path "$VcpkgInstallRoot\$VcpkgTriplet\include\libavcodec" "$NuGetBuildDir\build\native\include" -Force -Recurse
+  Copy-File -Path "$VcpkgInstallRoot\$VcpkgTriplet\include\libavdevice" "$NuGetBuildDir\build\native\include" -Force -Recurse
+  Copy-File -Path "$VcpkgInstallRoot\$VcpkgTriplet\include\libavfilter" "$NuGetBuildDir\build\native\include" -Force -Recurse
+  Copy-File -Path "$VcpkgInstallRoot\$VcpkgTriplet\include\libavformat" "$NuGetBuildDir\build\native\include" -Force -Recurse
+  Copy-File -Path "$VcpkgInstallRoot\$VcpkgTriplet\include\libavutil" "$NuGetBuildDir\build\native\include" -Force -Recurse
+  Copy-File -Path "$VcpkgInstallRoot\$VcpkgTriplet\include\libswresample" "$NuGetBuildDir\build\native\include" -Force -Recurse
+  Copy-File -Path "$VcpkgInstallRoot\$VcpkgTriplet\include\libswscale" "$NuGetBuildDir\build\native\include" -Force -Recurse
 
   Write-Host "${ScriptName}: Replacing variable `$version`$ in runtime.json with value '$NuGetPackageVersion'..." -ForegroundColor Yellow
   $RuntimeContent = Get-Content $NuGetBuildDir\runtime.json -Raw

@@ -110,13 +110,6 @@ try {
   Copy-File -Path "$VcpkgInstallRoot\$VcpkgTriplet\bin\avutil*.dll" "$NuGetBuildDir\runtimes\$Runtime\native" -Force
   Copy-File -Path "$VcpkgInstallRoot\$VcpkgTriplet\bin\swresample*.dll" "$NuGetBuildDir\runtimes\$Runtime\native" -Force
   Copy-File -Path "$VcpkgInstallRoot\$VcpkgTriplet\bin\swscale*.dll" "$NuGetBuildDir\runtimes\$Runtime\native" -Force
-  Copy-File -Path "$VcpkgInstallRoot\$VcpkgTriplet\include\libavcodec" "$NuGetBuildDir\build\native\include" -Force -Recurse
-  Copy-File -Path "$VcpkgInstallRoot\$VcpkgTriplet\include\libavdevice" "$NuGetBuildDir\build\native\include" -Force -Recurse
-  Copy-File -Path "$VcpkgInstallRoot\$VcpkgTriplet\include\libavfilter" "$NuGetBuildDir\build\native\include" -Force -Recurse
-  Copy-File -Path "$VcpkgInstallRoot\$VcpkgTriplet\include\libavformat" "$NuGetBuildDir\build\native\include" -Force -Recurse
-  Copy-File -Path "$VcpkgInstallRoot\$VcpkgTriplet\include\libavutil" "$NuGetBuildDir\build\native\include" -Force -Recurse
-  Copy-File -Path "$VcpkgInstallRoot\$VcpkgTriplet\include\libswresample" "$NuGetBuildDir\build\native\include" -Force -Recurse
-  Copy-File -Path "$VcpkgInstallRoot\$VcpkgTriplet\include\libswscale" "$NuGetBuildDir\build\native\include" -Force -Recurse
 
   Write-Host "${ScriptName}: Building FFmpeg runtime package..." -ForegroundColor Yellow
   & nuget pack $NuGetBuildDir\$NuGetPackageName.nuspec -Properties version=$NuGetPackageVersion -OutputDirectory $NuGetInstallRoot
