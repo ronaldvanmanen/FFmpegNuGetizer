@@ -46,6 +46,8 @@ done
 function Help {
   echo "Usage: $ScriptName [OPTION]"
   echo ""
+  echo "Builds an FFmpeg runtime package for the specified .NET runtime."
+  echo ""
   echo "Options:"
   echo "  --runtime <value>   Specifies the .NET runtime identifier for the package (e.g. linux-x64)"
   echo "  --help              Print help and exit"

@@ -1,12 +1,12 @@
 <#
   .SYNOPSIS
-  Builds Windows native NuGet package for FFmpeg.
+  Builds an FFmpeg runtime package for the specified .NET runtime.
 
   .DESCRIPTION
-  Builds Windows native NuGet package for FFmpeg.
+  Builds an FFmpeg runtime package for the specified .NET runtime.
 
   .PARAMETER runtime
-  The runtime identifier to use for the native package (e.g. win-x64, win-x86).
+  Specifies the .NET runtime identifier for the package (e.g. win-x64, win-x86).
 
   .INPUTS
   None.
@@ -15,10 +15,10 @@
   None.
 
   .EXAMPLE
-  PS> .\build-windows -runtime x64
+  PS> .\build-runtime -runtime win-x64
 
   .EXAMPLE
-  PS> .\build-windows -runtime x86
+  PS> .\build-runtime -runtime win-x86
 #>
 
 [CmdletBinding(PositionalBinding=$false)]
