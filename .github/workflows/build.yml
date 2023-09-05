@@ -99,6 +99,10 @@ jobs:
       with:
         fetch-depth: 0
         submodules: true
+    - uses: actions/download-artifact@v3
+      with:
+        name: artifacts
+        path: ./artifacts
     - uses: nuget/setup-nuget@v1
       with:
         nuget-version: '6.x'
