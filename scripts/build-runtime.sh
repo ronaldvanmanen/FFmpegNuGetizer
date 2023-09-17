@@ -24,6 +24,7 @@ ScriptRoot="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 ScriptName=$(basename -s '.sh' "$SOURCE")
 Help=false
 Runtime=''
+Feature=''
 
 while [[ $# -gt 0 ]]; do
   lower="$(echo "$1" | awk '{print tolower($0)}')"
@@ -34,6 +35,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --runtime)
       Runtime=$2
+      shift 2
+      ;;
+    --feature)
+      Feature=$2
       shift 2
       ;;
     *)
@@ -50,6 +55,7 @@ function Help {
   echo ""
   echo "Options:"
   echo "  --runtime <value>   Specifies the .NET runtime identifier for the package (e.g. linux-x64)"
+  echo "  --feature <value>   Specifies the vcpkg feature to use for the package (e.g. none, all-lgpl, all-lgpl)"
   echo "  --help              Print help and exit"
 }
 
@@ -109,6 +115,8 @@ echo "$ScriptName: Building FFmpeg using vcpkg..."
   --x-buildtrees-root="$VcpkgBuildtreesRoot" \
   --x-install-root="$VcpkgInstallRoot" \
   --x-packages-root="$VcpkgPackagesRoot" \
+  --x-no-default-features \
+  --x-feature="$Feature" \
   --disable-metrics
 LAST_EXITCODE=$?
 if [ $LAST_EXITCODE != 0 ]; then

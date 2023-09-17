@@ -8,6 +8,9 @@
   .PARAMETER runtime
   Specifies the .NET runtime identifier for the package (e.g. win-x64, win-x86).
 
+  .PARAMETER feature
+  Specifies the vcpkg feature for the package (e.g. win-x64, win-x86).
+
   .INPUTS
   None.
 
@@ -23,7 +26,8 @@
 
 [CmdletBinding(PositionalBinding=$false)]
 Param(
-  [Parameter(Mandatory)][ValidateSet("win-x64", "win-x86")][string] $Runtime = ""
+  [Parameter(Mandatory)][ValidateSet("win-x64", "win-x86")][string] $Runtime = "",
+  [Parameter(Mandatory)][ValidateSet("none", "all-lgpl", "all-gpl")][string] $Feature = "none"
 )
 
 Set-StrictMode -Version 2.0
@@ -90,6 +94,8 @@ try {
     --x-buildtrees-root="$VcpkgBuildtreesRoot" `
     --x-install-root="$VcpkgInstallRoot" `
     --x-packages-root="$VcpkgPackagesRoot" `
+    --x-no-default-features `
+    --x-feature="$Feature" `
     --disable-metrics
   if ($LastExitCode -ne 0) {
     throw "${ScriptName}: Failed to build FFmpeg using vcpkg."
