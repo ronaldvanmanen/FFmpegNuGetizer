@@ -1,0 +1,31 @@
+{
+    "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
+    "name": "ffmpeg-packaging",
+    "version": "4.4.4",
+    "dependencies": [
+        {
+            "name": "ffmpeg",
+            "default-features": false,
+            "features": [
+                "avcodec",
+                "avdevice",
+                "avfilter",
+                "avformat",
+                "swresample",
+                "swscale"
+            ]
+        }
+    ],
+    "overrides": [
+        { "name": "ffmpeg", "version": "4.4.4" }
+    ],
+    "vcpkg-configuration": {
+        "overlay-ports": [
+            "./vcpkg-ports"
+        ],
+        "overlay-triplets": [
+            "./vcpkg-triplets"
+        ]
+    },
+    "builtin-baseline": "60df970bbe42bfc03a481113a250f0a1c7546676"
+}
