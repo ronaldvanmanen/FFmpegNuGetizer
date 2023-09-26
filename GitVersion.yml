@@ -1,6 +1,22 @@
 mode: ContinuousDeployment
 next-version: 4.4.4
-branches: {}
+increment: None
+commit-message-incrementing: Disabled
+branches:
+  develop:
+    increment: None
+  main:
+    increment: None
+  release:
+    increment: None
+  feature:
+    increment: None
+  pull-request:
+    increment: None
+  hotfix:
+    increment: None
+  support:
+    increment: None
 ignore:
   sha: []
 merge-message-formats: {}
