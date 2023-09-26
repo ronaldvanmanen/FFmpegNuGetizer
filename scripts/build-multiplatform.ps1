@@ -1,3 +1,34 @@
+<#
+  .SYNOPSIS
+  Builds an FFmpeg multiplatform package for the specified feature.
+
+  .DESCRIPTION
+  Builds an FFmpeg multiplatform package for the specified feature.
+
+  .PARAMETER feature
+  Specifies the Vcpkg feature for the package (e.g. none, all-lgpl, all-gpl).
+
+  .INPUTS
+  None.
+
+  .OUTPUTS
+  None.
+
+  .EXAMPLE
+  PS> .\build-runtime -feature none
+
+  .EXAMPLE
+  PS> .\build-runtime -feature all-lgpl
+
+  .EXAMPLE
+  PS> .\build-runtime -feature all-gpl
+#>
+
+[CmdletBinding(PositionalBinding=$false)]
+Param(
+  [Parameter(Mandatory)][ValidateSet("none", "all-lgpl", "all-gpl")][string] $Feature = "none"
+)
+
 Set-StrictMode -Version 2.0
 $ErrorActionPreference = "Stop"
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
@@ -24,7 +55,7 @@ try {
 
   New-Directory -Path $ArtifactsRoot
 
-  $NuGetPackageName = "FFmpeg"
+  $NuGetPackageName = ($Feature -eq "none") ? "FFmpeg" : "FFmpeg.$Feature"
   $NuGetArtifactsRoot = Join-Path $ArtifactsRoot -ChildPath "nuget"
   $NuGetBuildRoot = Join-Path $NuGetArtifactsRoot -ChildPath "build"
   $NuGetBuildDir = Join-Path $NuGetBuildRoot -ChildPath $NuGetPackageName

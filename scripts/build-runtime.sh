@@ -24,7 +24,7 @@ ScriptRoot="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 ScriptName=$(basename -s '.sh' "$SOURCE")
 Help=false
 Runtime=''
-Feature=''
+Feature='none'
 
 while [[ $# -gt 0 ]]; do
   lower="$(echo "$1" | awk '{print tolower($0)}')"
@@ -91,7 +91,12 @@ VcpkgPackagesRoot="$VcpkgArtifactsRoot/packages"
 
 MakeDirectory "$VcpkgArtifactsRoot" "$VcpkgBuildtreesRoot" "$VcpkgDownloadsRoot" "$VcpkgInstallRoot" "$VcpkgPackagesRoot"
 
-NuGetPackageName="FFmpeg.runtime.$Runtime"
+if [[ $Feature == "none" ]]; then
+  NuGetPackageName="FFmpeg.runtime.$Runtime"
+else
+  NuGetPackageName="FFmpeg.$Feature.runtime.$Runtime"
+fi
+
 NuGetArtifactsRoot="$ArtifactsRoot/nuget"
 NuGetBuildRoot="$NuGetArtifactsRoot/build"
 NuGetBuildDir="$NuGetBuildRoot/$NuGetPackageName"

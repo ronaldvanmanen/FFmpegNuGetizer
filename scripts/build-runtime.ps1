@@ -9,7 +9,7 @@
   Specifies the .NET runtime identifier for the package (e.g. win-x64, win-x86).
 
   .PARAMETER feature
-  Specifies the vcpkg feature for the package (e.g. win-x64, win-x86).
+  Specifies the vcpkg feature for the package (e.g. none, all-lgpl, all-gpl).
 
   .INPUTS
   None.
@@ -18,10 +18,13 @@
   None.
 
   .EXAMPLE
-  PS> .\build-runtime -runtime win-x64
+  PS> .\build-runtime -runtime win-x64 -feature none
 
   .EXAMPLE
-  PS> .\build-runtime -runtime win-x86
+  PS> .\build-runtime -runtime win-x86 -feature all-lgpl
+
+  .EXAMPLE
+  PS> .\build-runtime -runtime win-x64 -feature all-gpl
 #>
 
 [CmdletBinding(PositionalBinding=$false)]
@@ -72,7 +75,7 @@ try {
 
   New-Directory -Path $VcpkgArtifactsRoot, $VcpkgBuildtreesRoot, $VcpkgDownloadsRoot, $VcpkgInstallRoot, $VcpkgPackagesRoot
  
-  $NuGetPackageName = "FFmpeg.runtime.$Runtime"
+  $NuGetPackageName = ($Feature -eq "none") ? "FFmpeg.runtime.$Runtime" : "FFmpeg.$Feature.runtime.$Runtime"
   $NuGetArtifactsRoot = Join-Path $ArtifactsRoot -ChildPath "nuget"
   $NuGetBuildRoot = Join-Path $NuGetArtifactsRoot -ChildPath "build"
   $NuGetBuildDir = Join-Path $NuGetBuildRoot -ChildPath $NuGetPackageName
