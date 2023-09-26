@@ -7,7 +7,7 @@
     <authors>Ronald van Manen</authors>
     <owners>Ronald van Manen</owners>
     <projectUrl>https://github.com/ronaldvanmanen/FFmpeg-packaging</projectUrl>
-    <license type="expression">GPL-3.0-or-later</license>
+    <license type="expression">LGPL-2.1-or-later</license>
     <requireLicenseAcceptance>true</requireLicenseAcceptance>
     <copyright>Copyright © Ronald van Manen</copyright>
     <repository type="git" url="https://github.com/ronaldvanmanen/FFmpeg-packaging" />
