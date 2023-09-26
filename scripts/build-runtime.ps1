@@ -54,9 +54,9 @@ try {
   $ScriptName = [System.IO.Path]::GetFileNameWithoutExtension($MyInvocation.MyCommand.Name)
 
   if ($Runtime -eq "win-x64") {
-    $VcpkgTriplet="x64-windows-release"
+    $VcpkgTriplet = "x64-windows-release"
   } elseif ($Runtime -eq "win-x86") {
-    $VcpkgTriplet="x86-windows-release"
+    $VcpkgTriplet = "x86-windows-release"
   } else {
     throw "${ScriptName}: The specified .NET runtime identifier is not yet supported."
   }
