@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata minClientVersion="2.12">
+    <id>FFmpeg.all-lgpl</id>
+    <version>$version$</version>
+    <description>Multi-platform native library for FFmpeg.</description>
+    <authors>Ronald van Manen</authors>
+    <owners>Ronald van Manen</owners>
+    <projectUrl>https://github.com/ronaldvanmanen/FFmpeg-packaging</projectUrl>
+    <license type="expression">LGPL-2.1-or-later</license>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
+    <copyright>Copyright © Ronald van Manen</copyright>
+    <repository type="git" url="https://github.com/ronaldvanmanen/FFmpeg-packaging" />
+    <dependencies>
+      <group targetFramework=".NETStandard2.0" />
+    </dependencies>
+  </metadata>
+</package>
