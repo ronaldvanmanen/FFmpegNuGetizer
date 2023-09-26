@@ -1,0 +1,19 @@
+{
+  "runtimes": {
+    "linux-x64": {
+      "FFmpeg": {
+        "FFmpeg.all-gpl.runtime.linux-x64": "$version$"
+      }
+    },
+    "win-x64": {
+      "FFmpeg": {
+        "FFmpeg.all-gpl.runtime.win-x64": "$version$"
+      }
+    },
+    "win-x86": {
+      "FFmpeg": {
+        "FFmpeg.all-gpl.runtime.win-x86": "$version$"
+      }
+    }
+  }
+}
