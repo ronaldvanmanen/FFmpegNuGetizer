@@ -18,7 +18,9 @@ jobs:
     strategy:
       matrix:
         platform:
-          - { name: Build Runtime Package (linux-x64), os: ubuntu-latest, runtime: linux-x64 }
+          - { name: Build Runtime Package (linux-x64, none), os: ubuntu-latest, runtime: linux-x64, feature: none }
+          - { name: Build Runtime Package (linux-x64, all-lgpl), os: ubuntu-latest, runtime: linux-x64, feature: all-lgpl }
+          - { name: Build Runtime Package (linux-x64, all-gpl), os: ubuntu-latest, runtime: linux-x64, feature: all-gpl }
     steps:
     - uses: actions/checkout@v3
       with:
@@ -45,7 +47,7 @@ jobs:
       shell: bash
     - run: dotnet tool restore
       shell: bash
-    - run: ./scripts/build-runtime.sh --runtime ${{ matrix.platform.runtime }}
+    - run: ./scripts/build-runtime.sh --runtime ${{ matrix.platform.runtime }} --feature ${{ matrix.platform.feature }}
       shell: bash
     - uses: actions/upload-artifact@v3
       with:
@@ -60,8 +62,12 @@ jobs:
     strategy:
       matrix:
         platform:
-        - { name: Build Runtime Package (win-x64), os: windows-latest, runtime: win-x64 }
-        - { name: Build Runtime Package (win-x86), os: windows-latest, runtime: win-x86 }
+        - { name: Build Runtime Package (win-x64, none), os: windows-latest, runtime: win-x64, feature: none }
+        - { name: Build Runtime Package (win-x64, all-lgpl), os: windows-latest, runtime: win-x64, feature: all-lgpl }
+        - { name: Build Runtime Package (win-x64, all-gpl), os: windows-latest, runtime: win-x64, feature: all-gpl }
+        - { name: Build Runtime Package (win-x86, none), os: windows-latest, runtime: win-x86, feature: none }
+        - { name: Build Runtime Package (win-x86, all-lgpl), os: windows-latest, runtime: win-x86, feature: all-lgpl }
+        - { name: Build Runtime Package (win-x86, all-gpl), os: windows-latest, runtime: win-x86, feature: all-gpl }
     steps:
     - uses: actions/checkout@v3
       with:
@@ -81,7 +87,7 @@ jobs:
       shell: cmd
     - run: dotnet tool restore
       shell: cmd
-    - run: .\scripts\build-runtime.cmd -runtime ${{ matrix.platform.runtime }}
+    - run: .\scripts\build-runtime.cmd -runtime ${{ matrix.platform.runtime }} -feature ${{ matrix.platform.feature }}
       shell: cmd
     - uses: actions/upload-artifact@v3
       with:
@@ -91,8 +97,14 @@ jobs:
           .\artifacts\vcpkg\installed\**\*
         if-no-files-found: error
   build-multiplatform:
-    name: Build Multiplatform Package
+    name: ${{ matrix.platform.name }}
     runs-on: windows-latest
+    strategy:
+      matrix:
+        platform:
+        - { name: Build Multi-platform Package (none), feature: none }
+        - { name: Build Multi-platform Package (all-lgpl), feature: all-lgpl }
+        - { name: Build Multi-platform Package (all-gpl), feature: all-gpl }
     needs: [ build-linux, build-windows ]
     steps:
     - uses: actions/checkout@v3
@@ -114,7 +126,7 @@ jobs:
       shell: cmd
     - run: dotnet tool restore
       shell: cmd
-    - run: .\scripts\build-multiplatform.cmd
+    - run: .\scripts\build-multiplatform.cmd -feature ${{ matrix.platform.feature }}
       shell: cmd
     - uses: actions/upload-artifact@v3
       with:
