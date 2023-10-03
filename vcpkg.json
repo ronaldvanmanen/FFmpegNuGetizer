@@ -4,11 +4,11 @@
     "version": "4.4.4",
     "default-features": [
         {
-            "name": "none"
+            "name": "no-deps"
         }
     ],
     "features": {
-        "none": {
+        "no-deps": {
             "description": "Build FFmpeg with no dependencies.",
             "dependencies": [
                 {
