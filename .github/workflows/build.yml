@@ -13,14 +13,12 @@ on:
 
 jobs:
   build-linux:
-    name: ${{ matrix.platform.name }}
-    runs-on: ${{ matrix.platform.os }}
+    name: Build (${{ matrix.feature }}, ${{ matrix.triplet }})
+    runs-on: ubuntu-latest
     strategy:
       matrix:
-        platform:
-          - { name: Build Runtime Package (linux-x64, none), os: ubuntu-latest, runtime: linux-x64, feature: none }
-          - { name: Build Runtime Package (linux-x64, all-lgpl), os: ubuntu-latest, runtime: linux-x64, feature: all-lgpl }
-          - { name: Build Runtime Package (linux-x64, all-gpl), os: ubuntu-latest, runtime: linux-x64, feature: all-gpl }
+        feature: [ no-deps ]
+        triplet: [ x64-linux-dynamic-release ]
     steps:
     - uses: actions/checkout@v3
       with:
@@ -45,29 +43,20 @@ jobs:
         --password ${{ secrets.AZURE_DEVOPS_PAT }}
         --store-password-in-clear-text
       shell: bash
-    - run: dotnet tool restore
-      shell: bash
-    - run: ./scripts/build-runtime.sh --runtime ${{ matrix.platform.runtime }} --feature ${{ matrix.platform.feature }}
+    - run: ./build.sh --target build --feature ${{ matrix.feature }} --triplet ${{ matrix.triplet }}
       shell: bash
     - uses: actions/upload-artifact@v3
       with:
-        name: artifacts
-        path: |
-          ./artifacts/nuget/installed/**/*
-          ./artifacts/vcpkg/installed/**/*
+        name: vcpkg
+        path: ./artifacts/vcpkg/${{ matrix.feature }}/${{ matrix.triplet }}/installed/${{ matrix.triplet }}/**/*
         if-no-files-found: error
   build-windows:
-    name: ${{ matrix.platform.name }}
-    runs-on: ${{ matrix.platform.os }}
+    name: Build (${{ matrix.feature }}, ${{ matrix.triplet }})
+    runs-on: windows-latest
     strategy:
       matrix:
-        platform:
-        - { name: Build Runtime Package (win-x64, none), os: windows-latest, runtime: win-x64, feature: none }
-        - { name: Build Runtime Package (win-x64, all-lgpl), os: windows-latest, runtime: win-x64, feature: all-lgpl }
-        - { name: Build Runtime Package (win-x64, all-gpl), os: windows-latest, runtime: win-x64, feature: all-gpl }
-        - { name: Build Runtime Package (win-x86, none), os: windows-latest, runtime: win-x86, feature: none }
-        - { name: Build Runtime Package (win-x86, all-lgpl), os: windows-latest, runtime: win-x86, feature: all-lgpl }
-        - { name: Build Runtime Package (win-x86, all-gpl), os: windows-latest, runtime: win-x86, feature: all-gpl }
+        feature: [ no-deps ]
+        triplet: [ x64-windows-release, x86-windows-release ]
     steps:
     - uses: actions/checkout@v3
       with:
@@ -85,26 +74,19 @@ jobs:
         --password ${{ secrets.AZURE_DEVOPS_PAT }}
         --store-password-in-clear-text
       shell: cmd
-    - run: dotnet tool restore
-      shell: cmd
-    - run: .\scripts\build-runtime.cmd -runtime ${{ matrix.platform.runtime }} -feature ${{ matrix.platform.feature }}
+    - run: .\build.cmd --target build --feature ${{ matrix.feature }} --triplet ${{ matrix.triplet }}
       shell: cmd
     - uses: actions/upload-artifact@v3
       with:
-        name: artifacts
-        path: |
-          .\artifacts\nuget\installed\**\*
-          .\artifacts\vcpkg\installed\**\*
+        name: vcpkg
+        path: .\artifacts\vcpkg\${{ matrix.feature }}\${{ matrix.triplet }}\installed\${{ matrix.triplet }}\**\*
         if-no-files-found: error
-  build-multiplatform:
-    name: ${{ matrix.platform.name }}
+  pack:
+    name: Pack (${{ matrix.feature }})
     runs-on: windows-latest
     strategy:
       matrix:
-        platform:
-        - { name: Build Multi-platform Package (none), feature: none }
-        - { name: Build Multi-platform Package (all-lgpl), feature: all-lgpl }
-        - { name: Build Multi-platform Package (all-gpl), feature: all-gpl }
+        feature: [ no-deps ]
     needs: [ build-linux, build-windows ]
     steps:
     - uses: actions/checkout@v3
@@ -113,8 +95,8 @@ jobs:
         submodules: true
     - uses: actions/download-artifact@v3
       with:
-        name: artifacts
-        path: ./artifacts
+        name: vcpkg
+        path: .\artifacts\vcpkg
     - uses: nuget/setup-nuget@v1
       with:
         nuget-version: '6.x'
@@ -124,24 +106,27 @@ jobs:
         --password ${{ secrets.AZURE_DEVOPS_PAT }}
         --store-password-in-clear-text
       shell: cmd
-    - run: dotnet tool restore
-      shell: cmd
-    - run: .\scripts\build-multiplatform.cmd -feature ${{ matrix.platform.feature }}
+    - run: >
+        .\build.cmd --target pack
+        --feature ${{ matrix.feature }}
+        --triplet x64-linux-dynamic-release
+        --triplet x64-windows-release
+        --triplet x86-windows-release
       shell: cmd
     - uses: actions/upload-artifact@v3
       with:
-        name: artifacts
+        name: nuget
         path: .\artifacts\nuget\installed\**\*
         if-no-files-found: error
-  publish-artifacts-on-azure:
-    name: Publish Artifacts on Azure
+  publish-azure:
+    name: Publish on Azure
     runs-on: ubuntu-latest
-    needs: [ build-multiplatform ]
+    needs: [ pack ]
     steps:
     - uses: actions/download-artifact@v3
       with:
-        name: artifacts
-        path: ./artifacts
+        name: nuget
+        path: ./artifacts/nuget/installed
     - uses: actions/setup-dotnet@v3
       with:
         dotnet-version: '6.0.x'
@@ -149,21 +134,21 @@ jobs:
       env:
         NUGET_AUTH_TOKEN: ${{ secrets.AZURE_DEVOPS_PAT }}
     - run: >
-        dotnet nuget push "./artifacts/**/*.nupkg"
+        dotnet nuget push "./artifacts/nuget/installed/**/*.nupkg"
         --api-key AzureDevOps
         --skip-duplicate
       shell: bash
-  publish-artifacts-on-github:
-    name: Publish Artifacts on GitHub
+  publish-github:
+    name: Publish on GitHub
     runs-on: ubuntu-latest
     permissions:
       packages: write
-    needs: [ build-multiplatform ]
+    needs: [ pack ]
     steps:
     - uses: actions/download-artifact@v3
       with:
-        name: artifacts
-        path: ./artifacts
+        name: nuget
+        path: ./artifacts/nuget/installed
     - uses: actions/setup-dotnet@v3
       with:
         dotnet-version: '6.0.x'
@@ -171,7 +156,7 @@ jobs:
       env:
         NUGET_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     - run: >
-        dotnet nuget push "./artifacts/**/*.nupkg"
+        dotnet nuget push "./artifacts/nuget/installed/**/*.nupkg"
         --source "https://nuget.pkg.github.com/ronaldvanmanen/index.json"
         --api-key ${{ secrets.GITHUB_TOKEN }}
         --skip-duplicate
