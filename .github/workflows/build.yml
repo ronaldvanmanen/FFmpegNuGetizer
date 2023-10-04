@@ -12,13 +12,15 @@ on:
       - 'main'
 
 jobs:
-  build-linux:
-    name: Build (${{ matrix.feature }}, ${{ matrix.triplet }})
-    runs-on: ubuntu-latest
+  build:
+    name: Build (${{ matrix.configuration.feature }}, ${{ matrix.configuration.triplet }})
+    runs-on: ${{ matrix.configuration.os }}-latest
     strategy:
       matrix:
-        feature: [ no-deps ]
-        triplet: [ x64-linux-dynamic-release ]
+        configuration:
+        - { os: ubuntu, feature: no-deps, triplet: x64-linux-dynamic-release }
+        - { os: windows, feature: no-deps, triplet: x64-windows-release }
+        - { os: windows, feature: no-deps, triplet: x86-windows-release }
     steps:
     - uses: actions/checkout@v3
       with:
@@ -33,73 +35,46 @@ jobs:
     - uses: nuget/setup-nuget@v1
       with:
         nuget-version: '6.x'
-    - run: sudo apt-get update
+    - name: Set up Linux dependencies
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install nasm
       shell: bash
-    - run: sudo apt-get install nasm
-      shell: bash
-    - run: >
+    - name: Set up NuGet sources
+      run: >
         dotnet nuget update source azure
         --username GitHub
         --password ${{ secrets.AZURE_DEVOPS_PAT }}
         --store-password-in-clear-text
+    - name: Run build (Linux)
+      run: ./build.sh --target build --feature ${{ matrix.configuration.feature }} --triplet ${{ matrix.configuration.triplet }}
+      if: runner.os == 'Linux'
       shell: bash
-    - run: ./build.sh --target build --feature ${{ matrix.feature }} --triplet ${{ matrix.triplet }}
-      shell: bash
-    - uses: actions/upload-artifact@v3
+    - name: Run build (Windows)
+      run: .\build.cmd --target build --feature ${{ matrix.configuration.feature }} --triplet ${{ matrix.configuration.triplet }}
+      if: runner.os == 'Windows'
+      shell: cmd
+    - name: Run actions/upload-artifact@v3 (on success)
+      uses: actions/upload-artifact@v3
       with:
         name: vcpkg
-        path: ./artifacts/vcpkg/${{ matrix.feature }}/${{ matrix.triplet }}/installed/${{ matrix.triplet }}/**/*
+        path: ./artifacts/vcpkg/${{ matrix.configuration.feature }}/${{ matrix.configuration.triplet }}/installed/${{ matrix.configuration.triplet }}/**/*
         if-no-files-found: error
-    - uses: actions/upload-artifact@v3
+    - name: Run actions/upload-artifact@v3 (on failure)
+      uses: actions/upload-artifact@v3
       if: failure()
       with:
-        name: vcpkg-${{ matrix.feature }}-${{ matrix.triplet }}
+        name: vcpkg-${{ matrix.configuration.feature }}-${{ matrix.configuration.triplet }}
         path: ./artifacts/vcpkg/**/*
-        if-no-files-found: error
-  build-windows:
-    name: Build (${{ matrix.feature }}, ${{ matrix.triplet }})
-    runs-on: windows-latest
-    strategy:
-      matrix:
-        feature: [ no-deps ]
-        triplet: [ x64-windows-release, x86-windows-release ]
-    steps:
-    - uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
-        submodules: true
-    - uses: actions/setup-dotnet@v3
-      with:
-        dotnet-version: '6.0.x'
-        source-url: https://pkgs.dev.azure.com/ronaldvanmanen/_packaging/ronaldvanmanen/nuget/v3/index.json
-      env:
-        NUGET_AUTH_TOKEN: ${{ secrets.AZURE_DEVOPS_PAT }}
-    - run: >
-        dotnet nuget update source azure
-        --username GitHub
-        --password ${{ secrets.AZURE_DEVOPS_PAT }}
-        --store-password-in-clear-text
-      shell: cmd
-    - run: .\build.cmd --target build --feature ${{ matrix.feature }} --triplet ${{ matrix.triplet }}
-      shell: cmd
-    - uses: actions/upload-artifact@v3
-      with:
-        name: vcpkg
-        path: .\artifacts\vcpkg\${{ matrix.feature }}\${{ matrix.triplet }}\installed\${{ matrix.triplet }}\**\*
-        if-no-files-found: error
-    - uses: actions/upload-artifact@v3
-      if: failure()
-      with:
-        name: vcpkg-${{ matrix.feature }}-${{ matrix.triplet }}
-        path: .\artifacts\vcpkg\**\*
         if-no-files-found: error
   pack:
     name: Pack (${{ matrix.feature }})
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         feature: [ no-deps ]
-    needs: [ build-linux, build-windows ]
+    needs: [ build ]
     steps:
     - uses: actions/checkout@v3
       with:
@@ -108,27 +83,29 @@ jobs:
     - uses: actions/download-artifact@v3
       with:
         name: vcpkg
-        path: .\artifacts\vcpkg
+        path: ./artifacts/vcpkg
     - uses: nuget/setup-nuget@v1
       with:
         nuget-version: '6.x'
-    - run: >
+    - name: Set up NuGet sources
+      run: >
         dotnet nuget update source azure
         --username GitHub
         --password ${{ secrets.AZURE_DEVOPS_PAT }}
         --store-password-in-clear-text
-      shell: cmd
-    - run: >
-        .\build.cmd --target pack
+      shell: bash
+    - name: Build NuGet packages.
+      run: >
+        ./build.sh --target pack
         --feature ${{ matrix.feature }}
         --triplet x64-linux-dynamic-release
         --triplet x64-windows-release
         --triplet x86-windows-release
-      shell: cmd
+      shell: bash
     - uses: actions/upload-artifact@v3
       with:
         name: nuget
-        path: .\artifacts\nuget\installed\**\*
+        path: ./artifacts/nuget/installed/**/*
         if-no-files-found: error
   publish-azure:
     name: Publish on Azure
@@ -145,7 +122,8 @@ jobs:
         source-url: https://pkgs.dev.azure.com/ronaldvanmanen/_packaging/ronaldvanmanen/nuget/v3/index.json
       env:
         NUGET_AUTH_TOKEN: ${{ secrets.AZURE_DEVOPS_PAT }}
-    - run: >
+    - name: Push NuGet packages
+      run: >
         dotnet nuget push "./artifacts/nuget/installed/**/*.nupkg"
         --api-key AzureDevOps
         --skip-duplicate
@@ -167,7 +145,8 @@ jobs:
         source-url: https://nuget.pkg.github.com/ronaldvanmanen/index.json
       env:
         NUGET_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    - run: >
+    - name: Push NuGet packages
+      run: >
         dotnet nuget push "./artifacts/nuget/installed/**/*.nupkg"
         --source "https://nuget.pkg.github.com/ronaldvanmanen/index.json"
         --api-key ${{ secrets.GITHUB_TOKEN }}
