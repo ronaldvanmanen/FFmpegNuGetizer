@@ -50,6 +50,12 @@ jobs:
         name: vcpkg
         path: ./artifacts/vcpkg/${{ matrix.feature }}/${{ matrix.triplet }}/installed/${{ matrix.triplet }}/**/*
         if-no-files-found: error
+    - uses: actions/upload-artifact@v3
+      if: failure()
+      with:
+        name: vcpkg-${{ matrix.feature }}-${{ matrix.triplet }}
+        path: ./artifacts/vcpkg/**/*
+        if-no-files-found: error
   build-windows:
     name: Build (${{ matrix.feature }}, ${{ matrix.triplet }})
     runs-on: windows-latest
@@ -80,6 +86,12 @@ jobs:
       with:
         name: vcpkg
         path: .\artifacts\vcpkg\${{ matrix.feature }}\${{ matrix.triplet }}\installed\${{ matrix.triplet }}\**\*
+        if-no-files-found: error
+    - uses: actions/upload-artifact@v3
+      if: failure()
+      with:
+        name: vcpkg-${{ matrix.feature }}-${{ matrix.triplet }}
+        path: .\artifacts\vcpkg\**\*
         if-no-files-found: error
   pack:
     name: Pack (${{ matrix.feature }})
