@@ -4,7 +4,7 @@ Set-Location -LiteralPath $PSScriptRoot
 
 $env:VCPKG_DISABLE_METRICS = 1
 .\vcpkg\bootstrap-vcpkg.bat -disableMetrics
-if ($LastExitCode -ne 0) {
+if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }
 
