@@ -295,7 +295,7 @@ Task("Pack-Multiplatform-Package").Does(() =>
             nugetPackSettings.Files.Add(
                 new NuSpecContent
                 {
-                    Source = $"include/{vcpkgFeature}/{vcpkgTriplet}/installed/{vcpkgTriplet}/include/**/*.h",
+                    Source = $"vcpkg/{vcpkgFeature}/{vcpkgTriplet}/installed/{vcpkgTriplet}/include/**/*.h",
                     Target = $"build/native/include"
                 });
         };
