@@ -1,23 +1,42 @@
-#tool dotnet:?package=GitVersion.Tool&version=5.10.3
+//////////////////////////////////////////////////////////////////////
+// ADD-INS
+//////////////////////////////////////////////////////////////////////
+
 #addin nuget:?package=Cake.FileHelpers&version=6.1.3
 #addin nuget:?package=Cake.Git&version=3.0.0
 #addin nuget:?package=NuGet.Packaging&Version=6.6.1&loaddependencies=true
+
+//////////////////////////////////////////////////////////////////////
+// TOOLS
+//////////////////////////////////////////////////////////////////////
+
+#tool dotnet:?package=GitVersion.Tool&version=5.10.3
+
+//////////////////////////////////////////////////////////////////////
+// USINGS
+//////////////////////////////////////////////////////////////////////
 
 using Cake.Common.IO.Paths;
 using NuGet.RuntimeModel;
 using NuGet.Versioning;
 
-var target = Argument<string>("target");
-
-var vcpkgRoot = Directory(EnvironmentVariable("VCPKG_ROOT", "vcpkg"));
+//////////////////////////////////////////////////////////////////////
+// PATHS
+//////////////////////////////////////////////////////////////////////
 
 var repoRoot = GitFindRootFromPath(Context.Environment.WorkingDirectory);
+
+var vcpkgRoot = repoRoot + Directory("vcpkg");
 
 var artifactsRoot = repoRoot + Directory("artifacts");
 var vcpkgArtifactsRoot = artifactsRoot + Directory("vcpkg");
 var nugetArtifactsRoot = artifactsRoot + Directory("nuget");
 var nugetBuildRoot = nugetArtifactsRoot + Directory("build");
 var nugetInstallRoot = nugetArtifactsRoot + Directory("installed");
+
+//////////////////////////////////////////////////////////////////////
+// METHODS
+//////////////////////////////////////////////////////////////////////
 
 internal ConvertableDirectoryPath Directory(string basePath, string childPath, params string[] additionalChildPaths)
 {
@@ -127,6 +146,10 @@ internal ConvertableDirectoryPath VcpkgPackagesRoot(string vcpkgFeature, string 
 {
     return vcpkgArtifactsRoot + Directory(vcpkgFeature, vcpkgTriplet, "packages");
 }
+
+//////////////////////////////////////////////////////////////////////
+// TASKS
+//////////////////////////////////////////////////////////////////////
 
 Task("Clean").Does(() => 
 {
@@ -325,4 +348,8 @@ Task("Pack-Runtime-Package").DoesForEach(Arguments<string>("triplet"), (vcpkgTri
     NuGetPack(nugetPackSettings);
 });
 
-RunTarget(target);
+//////////////////////////////////////////////////////////////////////
+// EXECUTION
+//////////////////////////////////////////////////////////////////////
+
+RunTarget(Argument<string>("target"));
