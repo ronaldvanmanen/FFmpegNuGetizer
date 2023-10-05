@@ -181,6 +181,7 @@ Task("Build").DoesForEach(Arguments<string>("triplet"), vcpkgTriplet =>
             .Append($"--x-packages-root={vcpkgPackagesRoot}")
             .Append($"--x-no-default-features")
             .Append($"--x-feature={vcpkgFeature}")
+            .Append($"--clean-after-build")
             .Append($"--disable-metrics")
         }
     );

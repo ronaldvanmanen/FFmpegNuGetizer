@@ -41,19 +41,11 @@ jobs:
         --username GitHub
         --password ${{ secrets.AZURE_DEVOPS_PAT }}
         --store-password-in-clear-text
-    - name: Run build
-      run: ${{ matrix.configuration.build }} --target build --feature ${{ matrix.configuration.feature }} --triplet ${{ matrix.configuration.triplet }}
-    - name: Run actions/upload-artifact@v3 (on success)
-      uses: actions/upload-artifact@v3
+    - run: ${{ matrix.configuration.build }} --target build --feature ${{ matrix.configuration.feature }} --triplet ${{ matrix.configuration.triplet }}
+    - uses: actions/upload-artifact@v3
+      if: success() || failure()
       with:
         name: vcpkg
-        path: ./artifacts/vcpkg/${{ matrix.configuration.feature }}/${{ matrix.configuration.triplet }}/installed/${{ matrix.configuration.triplet }}/**/*
-        if-no-files-found: error
-    - name: Run actions/upload-artifact@v3 (on failure)
-      uses: actions/upload-artifact@v3
-      if: failure()
-      with:
-        name: vcpkg-${{ matrix.configuration.feature }}-${{ matrix.configuration.triplet }}
         path: ./artifacts/vcpkg/**/*
         if-no-files-found: error
   pack:
