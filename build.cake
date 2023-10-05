@@ -205,6 +205,7 @@ Task("Pack-Multiplatform-Package").Does(() =>
     var gitVersion = GitVersion();
 
     var nugetPackageVersion = gitVersion.NuGetVersion;
+    var nugetPackageLicense = Argument<string>("license");
     var nugetPackageName = NuGetMultiplatformPackageName(vcpkgFeature);
     var nugetPackageDir = nugetBuildRoot + Directory(nugetPackageName);
 
@@ -236,7 +237,7 @@ Task("Pack-Multiplatform-Package").Does(() =>
         Owners = new[] { "Ronald van Manen" },
         RequireLicenseAcceptance = true,
         Description = "Multi-platform native library for FFmpeg.",
-        License = new NuSpecLicense { Type = "expression", Value = "LGPL-2.1-or-later" },
+        License = new NuSpecLicense { Type = "expression", Value = nugetPackageLicense },
         ProjectUrl = new Uri("https://github.com/ronaldvanmanen/FFmpeg-packaging"),
         Copyright = "Copyright © Ronald van Manen",
         Repository = new NuGetRepository { Type="git", Url = "https://github.com/ronaldvanmanen/FFmpeg-packaging" },
@@ -312,6 +313,7 @@ Task("Pack-Runtime-Package").DoesForEach(Arguments<string>("triplet"), (vcpkgTri
     var vcpkgInstallRoot = VcpkgInstallRoot(vcpkgFeature, vcpkgTriplet);
     var gitVersion = GitVersion();
     var dotnetRuntimeIdentifier = DotNetRuntimeIdentifier(vcpkgTriplet);
+    var nugetPackageLicense = Argument<string>("license");
     var nugetPackageName = NuGetRuntimePackageName(vcpkgFeature, vcpkgTriplet);
     var nugetPackBasePath = vcpkgInstallRoot + Directory(vcpkgTriplet);
     var nugetPackSettings = new NuGetPackSettings
@@ -322,7 +324,7 @@ Task("Pack-Runtime-Package").DoesForEach(Arguments<string>("triplet"), (vcpkgTri
         Owners = new[] { "Ronald van Manen" },
         RequireLicenseAcceptance = true,
         Description = $"{dotnetRuntimeIdentifier} native library for FFmpeg.",
-        License = new NuSpecLicense { Type = "expression", Value = "LGPL-2.1-or-later" },
+        License = new NuSpecLicense { Type = "expression", Value = nugetPackageLicense },
         ProjectUrl = new Uri("https://github.com/ronaldvanmanen/FFmpeg-packaging"),
         Copyright = "Copyright © Ronald van Manen",
         Repository = new NuGetRepository { Type = "git", Url = "https://github.com/ronaldvanmanen/FFmpeg-packaging" },
