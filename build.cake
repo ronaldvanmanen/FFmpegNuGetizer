@@ -266,15 +266,14 @@ Task("Pack-Multiplatform-Package").Does(() =>
             }
         };
 
-        foreach (var vcpkgTriplet in vcpkgTriplets)
-        {
-            nugetPackSettings.Files.Add(
-                new NuSpecContent
-                {
-                    Source = $"vcpkg\\{vcpkgFeature}\\{vcpkgTriplet}\\installed\\{vcpkgTriplet}\\include\\**\\*.h",
-                    Target = $"build\\native\\include"
-                });
-        };
+        var vcpkgTriplet = vcpkgTriplets.First();
+
+        nugetPackSettings.Files.Add(
+            new NuSpecContent
+            {
+                Source = $"vcpkg\\{vcpkgFeature}\\{vcpkgTriplet}\\installed\\{vcpkgTriplet}\\include\\**\\*.h",
+                Target = $"build\\native\\include"
+            });
     }
     else
     {
@@ -292,15 +291,14 @@ Task("Pack-Multiplatform-Package").Does(() =>
             }
         };
 
-        foreach (var vcpkgTriplet in vcpkgTriplets)
-        {
-            nugetPackSettings.Files.Add(
-                new NuSpecContent
-                {
-                    Source = $"vcpkg/{vcpkgFeature}/{vcpkgTriplet}/installed/{vcpkgTriplet}/include/**/*.h",
-                    Target = $"build/native/include"
-                });
-        };
+        var vcpkgTriplet = vcpkgTriplets.First();
+
+        nugetPackSettings.Files.Add(
+            new NuSpecContent
+            {
+                Source = $"vcpkg/{vcpkgFeature}/{vcpkgTriplet}/installed/{vcpkgTriplet}/include/**/*.h",
+                Target = $"build/native/include"
+            });
     }
 
     NuGetPack(nugetPackSettings);
