@@ -18,9 +18,9 @@ jobs:
     strategy:
       matrix:
         configuration:
-        - { os: ubuntu, feature: no-deps, triplet: x64-linux-dynamic-release }
-        - { os: windows, feature: no-deps, triplet: x64-windows-release }
-        - { os: windows, feature: no-deps, triplet: x86-windows-release }
+        - { os: ubuntu, feature: no-deps, triplet: x64-linux-dynamic-release, build: ./build.sh }
+        - { os: windows, feature: no-deps, triplet: x64-windows-release, build: .\build.cmd }
+        - { os: windows, feature: no-deps, triplet: x86-windows-release, build: .\build.cmd }
     steps:
     - uses: actions/checkout@v3
       with:
@@ -41,14 +41,8 @@ jobs:
         --username GitHub
         --password ${{ secrets.AZURE_DEVOPS_PAT }}
         --store-password-in-clear-text
-    - name: Run build (Linux)
-      run: ./build.sh --target build --feature ${{ matrix.configuration.feature }} --triplet ${{ matrix.configuration.triplet }}
-      if: runner.os == 'Linux'
-      shell: bash
-    - name: Run build (Windows)
-      run: .\build.cmd --target build --feature ${{ matrix.configuration.feature }} --triplet ${{ matrix.configuration.triplet }}
-      if: runner.os == 'Windows'
-      shell: cmd
+    - name: Run build
+      run: ${{ matrix.configuration.build }} --target build --feature ${{ matrix.configuration.feature }} --triplet ${{ matrix.configuration.triplet }}
     - name: Run actions/upload-artifact@v3 (on success)
       uses: actions/upload-artifact@v3
       with:
