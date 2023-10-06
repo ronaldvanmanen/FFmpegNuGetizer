@@ -13,21 +13,23 @@ on:
 
 jobs:
   build:
-    name: Build (${{ matrix.configuration.feature }}, ${{ matrix.configuration.triplet }})
-    runs-on: ${{ matrix.configuration.os }}-latest
+    name: Build (${{ matrix.feature }}, ${{ matrix.triplet }})
+    runs-on: ${{ matrix.os }}-latest
     strategy:
       fail-fast: false
       matrix:
-        configuration:
-        - { os: ubuntu, feature: no-deps, triplet: x64-linux-dynamic-release, build: ./build.sh }
-        - { os: windows, feature: no-deps, triplet: x64-windows-release, build: .\build.cmd }
-        - { os: windows, feature: no-deps, triplet: x86-windows-release, build: .\build.cmd }
-        - { os: ubuntu, feature: all-lgpl, triplet: x64-linux-dynamic-release, build: ./build.sh }
-        - { os: windows, feature: all-lgpl, triplet: x64-windows-release, build: .\build.cmd }
-        - { os: windows, feature: all-lgpl, triplet: x86-windows-release, build: .\build.cmd }
-        - { os: ubuntu, feature: all-gpl, triplet: x64-linux-dynamic-release, build: ./build.sh }
-        - { os: windows, feature: all-gpl, triplet: x64-windows-release, build: .\build.cmd }
-        - { os: windows, feature: all-gpl, triplet: x86-windows-release, build: .\build.cmd }
+        feature: [ no-deps, all-lgpl, all-gpl ]
+        triplet: [ x64-linux-dynamic-release, x64-windows-release, x86-windows-release ]
+        include:
+          - os: ubuntu
+            build: ./build.sh
+            triplet: x64-linux-dynamic-release
+          - os: windows
+            build: .\build.cmd
+            triplet: x64-windows-release
+          - os: windows
+            build: .\build.cmd
+            triplet: x86-windows-release
     steps:
     - uses: actions/checkout@v3
       with:
@@ -48,7 +50,7 @@ jobs:
         --username GitHub
         --password ${{ secrets.AZURE_DEVOPS_PAT }}
         --store-password-in-clear-text
-    - run: ${{ matrix.configuration.build }} --target build --feature ${{ matrix.configuration.feature }} --triplet ${{ matrix.configuration.triplet }}
+    - run: ${{ matrix.build }} --target build --feature ${{ matrix.feature }} --triplet ${{ matrix.triplet }}
     - uses: actions/upload-artifact@v3
       if: success() || failure()
       with:
@@ -56,15 +58,19 @@ jobs:
         path: ./artifacts/vcpkg/**/*
         if-no-files-found: error
   pack:
-    name: Pack (${{ matrix.configuration.feature }})
+    name: Pack (${{ matrix.feature }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        configuration:
-        - { feature: no-deps, license: LGPL-2.1-or-later }
-        - { feature: all-lgpl, license: LGPL-2.1-or-later }
-        - { feature: all-gpl, license: GPL-2.0-or-later }
+        feature: [ no-deps, all-lgpl, all-gpl ]
+        include:
+          - license: LGPL-2.1-or-later
+            feature: no-deps
+          - license: LGPL-2.1-or-later
+            feature: all-lgpl
+          - license: GPL-2.0-or-later
+            feature: all-gpl
     needs: [ build ]
     steps:
     - uses: actions/checkout@v3
@@ -88,11 +94,11 @@ jobs:
     - name: Build NuGet packages.
       run: >
         ./build.sh --target pack
-        --feature ${{ matrix.configuration.feature }}
+        --feature ${{ matrix.feature }}
         --triplet x64-linux-dynamic-release
         --triplet x64-windows-release
         --triplet x86-windows-release
-        --license ${{ matrix.configuration.license }}
+        --license ${{ matrix.license }}
       shell: bash
     - uses: actions/upload-artifact@v3
       with:
