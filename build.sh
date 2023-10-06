@@ -10,7 +10,7 @@ if [ $LAST_EXITCODE != 0 ]; then
     return "$LAST_EXITCODE"
 fi
 
-sudo apt-get update && sudo apt-get install nasm
+sudo apt-get update && sudo apt-get install nasm libgl-dev libglfw3-dev
 LAST_EXITCODE=$?
 if [ "$LAST_EXITCODE" != 0 ]; then
     return "$LAST_EXITCODE"
