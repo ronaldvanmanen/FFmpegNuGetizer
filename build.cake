@@ -333,17 +333,37 @@ Task("Pack-Runtime-Package").DoesForEach(Arguments<string>("triplet"), (vcpkgTri
 
     if (IsRunningOnWindows())
     {
-        nugetPackSettings.Files = new []
+        if (vcpkgTriplet.Contains("windows"))
         {
-            new NuSpecContent { Source = "bin\\*.dll", Target = $"runtimes\\{dotnetRuntimeIdentifier}\\native"}
-        };
+            nugetPackSettings.Files = new []
+            {
+                new NuSpecContent { Source = "bin\\*.dll", Target = $"runtimes\\{dotnetRuntimeIdentifier}\\native"}
+            };
+        }
+        else
+        {
+            nugetPackSettings.Files = new []
+            {
+                new NuSpecContent { Source = "lib\\*.so*", Target = $"runtimes\\{dotnetRuntimeIdentifier}\\native"}
+            };
+        }
     }
     else
     {
-        nugetPackSettings.Files = new []
+        if (vcpkgTriplet.Contains("windows"))
         {
-            new NuSpecContent { Source = "lib/*so*", Target = $"runtimes/{dotnetRuntimeIdentifier}/native"}
-        };
+            nugetPackSettings.Files = new []
+            {
+                new NuSpecContent { Source = "bin/*.dll", Target = $"runtimes/{dotnetRuntimeIdentifier}/native"}
+            };
+        }
+        else
+        {
+            nugetPackSettings.Files = new []
+            {
+                new NuSpecContent { Source = "lib/*.so*", Target = $"runtimes/{dotnetRuntimeIdentifier}/native"},
+            };
+        }
     }
 
     NuGetPack(nugetPackSettings);
