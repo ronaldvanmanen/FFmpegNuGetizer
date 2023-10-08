@@ -2,7 +2,16 @@ $ErrorActionPreference = 'Stop'
 
 Set-Location -LiteralPath $PSScriptRoot
 
-$env:VCPKG_DISABLE_METRICS = 1
+# Note: In order for aom to build on Windows x86 we need to increase
+# virtual memory and limit the concurrency, otherwise the aom build
+# will fail due to the compiler running out of heap space.
+#
+# See the following issues:
+# https://github.com/microsoft/vcpkg/issues/28389
+# https://github.com/microsoft/vcpkg/issues/31823
+$env:VCPKG_MAX_CONCURRENCY = '1'
+
+$env:VCPKG_DISABLE_METRICS = '1'
 .\vcpkg\bootstrap-vcpkg.bat -disableMetrics
 if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
