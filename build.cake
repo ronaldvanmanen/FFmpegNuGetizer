@@ -156,7 +156,7 @@ Task("Clean").Does(() =>
     CleanDirectory(artifactsRoot);
 });
 
-Task("Build").DoesForEach(Arguments<string>("triplet"), vcpkgTriplet =>
+Task("Build").DoesForEach(() => Arguments<string>("triplet"), vcpkgTriplet =>
 {
     var vcpkgFeature = Argument<string>("feature");
     var vcpkgBuildtreesRoot = VcpkgBuildtreesRoot(vcpkgFeature, vcpkgTriplet);
@@ -304,7 +304,7 @@ Task("Pack-Multiplatform-Package").Does(() =>
     NuGetPack(nugetPackSettings);
 });
 
-Task("Pack-Runtime-Package").DoesForEach(Arguments<string>("triplet"), (vcpkgTriplet) => 
+Task("Pack-Runtime-Package").DoesForEach(() => Arguments<string>("triplet"), (vcpkgTriplet) => 
 {
     EnsureDirectoriesExists(nugetArtifactsRoot, nugetInstallRoot);
 
