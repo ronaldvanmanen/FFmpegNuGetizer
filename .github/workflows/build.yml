@@ -31,27 +31,32 @@ jobs:
             build: .\build.cmd
             triplet: x86-windows-release
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout Git Repository
+      uses: actions/checkout@v3
       with:
         fetch-depth: 0
         submodules: true
-    - uses: actions/setup-dotnet@v3
+    - name: Set up DotNet
+      uses: actions/setup-dotnet@v3
       with:
         dotnet-version: '6.0.x'
         source-url: https://pkgs.dev.azure.com/ronaldvanmanen/_packaging/ronaldvanmanen/nuget/v3/index.json
       env:
         NUGET_AUTH_TOKEN: ${{ secrets.AZURE_DEVOPS_PAT }}
-    - uses: nuget/setup-nuget@v1
+    - name: Set up NuGet
+      uses: nuget/setup-nuget@v1
       with:
         nuget-version: '6.x'
-    - name: Set up NuGet sources
+    - name: Set up NuGet Credentials
       run: >
         dotnet nuget update source azure
         --username GitHub
         --password ${{ secrets.AZURE_DEVOPS_PAT }}
         --store-password-in-clear-text
-    - run: ${{ matrix.build }} --target build --feature ${{ matrix.feature }} --triplet ${{ matrix.triplet }}
-    - uses: actions/upload-artifact@v3
+    - name: Build and Install Port Packages
+      run: ${{ matrix.build }} --target build --feature ${{ matrix.feature }} --triplet ${{ matrix.triplet }}
+    - name: Upload Port Packages
+      uses: actions/upload-artifact@v3
       if: success() || failure()
       with:
         name: vcpkg
@@ -73,25 +78,35 @@ jobs:
             feature: all-gpl
     needs: [ build ]
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout Git Repository
+      uses: actions/checkout@v3
       with:
         fetch-depth: 0
         submodules: true
-    - uses: actions/download-artifact@v3
+    - name: Download Port Packages
+      uses: actions/download-artifact@v3
       with:
         name: vcpkg
         path: ./artifacts/vcpkg
-    - uses: nuget/setup-nuget@v1
+    - name: Set up DotNet
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '6.0.x'
+        source-url: https://pkgs.dev.azure.com/ronaldvanmanen/_packaging/ronaldvanmanen/nuget/v3/index.json
+      env:
+        NUGET_AUTH_TOKEN: ${{ secrets.AZURE_DEVOPS_PAT }}
+    - name: Set up NuGet
+      uses: nuget/setup-nuget@v1
       with:
         nuget-version: '6.x'
-    - name: Set up NuGet sources
+    - name: Set up NuGet Credentials
       run: >
         dotnet nuget update source azure
         --username GitHub
         --password ${{ secrets.AZURE_DEVOPS_PAT }}
         --store-password-in-clear-text
       shell: bash
-    - name: Build NuGet packages.
+    - name: Build NuGet Packages.
       run: >
         ./build.sh --target pack
         --feature ${{ matrix.feature }}
@@ -100,7 +115,8 @@ jobs:
         --triplet x86-windows-release
         --license ${{ matrix.license }}
       shell: bash
-    - uses: actions/upload-artifact@v3
+    - name: Upload NuGet Packages
+      uses: actions/upload-artifact@v3
       with:
         name: nuget
         path: ./artifacts/nuget/installed/**/*
@@ -110,11 +126,13 @@ jobs:
     runs-on: ubuntu-latest
     needs: [ pack ]
     steps:
-    - uses: actions/download-artifact@v3
+    - name: Download NuGet Packages
+      uses: actions/download-artifact@v3
       with:
         name: nuget
         path: ./artifacts/nuget/installed
-    - uses: actions/setup-dotnet@v3
+    - name: Set up DotNet
+      uses: actions/setup-dotnet@v3
       with:
         dotnet-version: '6.0.x'
         source-url: https://pkgs.dev.azure.com/ronaldvanmanen/_packaging/ronaldvanmanen/nuget/v3/index.json
@@ -133,17 +151,19 @@ jobs:
       packages: write
     needs: [ pack ]
     steps:
-    - uses: actions/download-artifact@v3
+    - name: Download NuGet Packages
+      uses: actions/download-artifact@v3
       with:
         name: nuget
         path: ./artifacts/nuget/installed
-    - uses: actions/setup-dotnet@v3
+    - name: Set up DotNet
+      uses: actions/setup-dotnet@v3
       with:
         dotnet-version: '6.0.x'
         source-url: https://nuget.pkg.github.com/ronaldvanmanen/index.json
       env:
         NUGET_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    - name: Push NuGet packages
+    - name: Push NuGet Packages
       run: >
         dotnet nuget push "./artifacts/nuget/installed/**/*.nupkg"
         --source "https://nuget.pkg.github.com/ronaldvanmanen/index.json"
