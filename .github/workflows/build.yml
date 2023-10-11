@@ -55,12 +55,14 @@ jobs:
         --store-password-in-clear-text
     - name: Build and Install Port Packages
       run: ${{ matrix.build }} --target build --feature ${{ matrix.feature }} --triplet ${{ matrix.triplet }}
+    - name: Zip Port Packages
+      run: 7z a ./artifacts/vcpkg/vcpkg-${{ matrix.feature }}-${{ matrix.triplet }}.zip ./artifacts/vcpkg/* -sdel
     - name: Upload Port Packages
       uses: actions/upload-artifact@v3
       if: success() || failure()
       with:
         name: vcpkg
-        path: ./artifacts/vcpkg/**/*
+        path: ./artifacts/vcpkg/vcpkg-*.zip
         if-no-files-found: error
   pack:
     name: Pack (${{ matrix.feature }})
@@ -88,6 +90,8 @@ jobs:
       with:
         name: vcpkg
         path: ./artifacts/vcpkg
+    - name: Unzip Port Packages
+      run: 7z x ./artifacts/vcpkg/vcpkg-*.zip -o ./artifacts/vcpkg/ -y
     - name: Set up DotNet
       uses: actions/setup-dotnet@v3
       with:
