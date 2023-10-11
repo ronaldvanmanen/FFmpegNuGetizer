@@ -40,17 +40,22 @@ jobs:
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: '6.0.x'
-        source-url: https://pkgs.dev.azure.com/ronaldvanmanen/_packaging/ronaldvanmanen/nuget/v3/index.json
-      env:
-        NUGET_AUTH_TOKEN: ${{ secrets.AZURE_DEVOPS_PAT }}
     - name: Set up DotNet NuGet Credentials
       run: >
         dotnet nuget update source azure
+        --source https://pkgs.dev.azure.com/ronaldvanmanen/_packaging/ronaldvanmanen/nuget/v3/index.json
+        --username GitHub
+        --password ${{ secrets.AZURE_DEVOPS_PAT }}
+        --store-password-in-clear-text
+    - name: Set up Vcpkg NuGet Cache Credentials
+      run: >
+        dotnet nuget update source vcpkg
+        --source https://pkgs.dev.azure.com/ronaldvanmanen/_packaging/vcpkg/nuget/v3/index.json
         --username GitHub
         --password ${{ secrets.AZURE_DEVOPS_PAT }}
         --store-password-in-clear-text
     - name: Build and Install Port Packages
-      run: ${{ matrix.build }} --target build --feature ${{ matrix.feature }} --triplet ${{ matrix.triplet }}
+      run: ${{ matrix.build }} --target build --feature ${{ matrix.feature }} --triplet ${{ matrix.triplet }} --binarysource 'clear;nuget,vcpkg,readwrite'
     - name: Zip Port Packages
       run: 7z a ./artifacts/vcpkg/vcpkg-${{ matrix.feature }}-${{ matrix.triplet }}.zip ./artifacts/vcpkg/* -sdel
     - name: Upload Port Packages
@@ -92,16 +97,6 @@ jobs:
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: '6.0.x'
-        source-url: https://pkgs.dev.azure.com/ronaldvanmanen/_packaging/ronaldvanmanen/nuget/v3/index.json
-      env:
-        NUGET_AUTH_TOKEN: ${{ secrets.AZURE_DEVOPS_PAT }}
-    - name: Set up DotNet NuGet Credentials
-      run: >
-        dotnet nuget update source azure
-        --username GitHub
-        --password ${{ secrets.AZURE_DEVOPS_PAT }}
-        --store-password-in-clear-text
-      shell: bash
     - name: Build NuGet Packages.
       run: >
         ./build.sh --target pack
