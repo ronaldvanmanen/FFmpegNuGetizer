@@ -81,6 +81,32 @@ internal ConvertableFilePath FindVcpkgExecutable(ConvertableDirectoryPath search
     throw new PlatformNotSupportedException();
 }
 
+internal ConvertableFilePath FindVcpkgNuGetExecutable(ConvertableDirectoryPath searchPath)
+{
+    var vcpkgExecutable = FindVcpkgExecutable(searchPath);
+    var vcpkgExitCode = StartProcess(vcpkgExecutable,
+        new ProcessSettings {
+            Arguments = new ProcessArgumentBuilder().Append("fetch").Append("nuget"),
+            RedirectStandardError = true,
+            RedirectStandardOutput = true
+        },
+        out var vcpkgRedirectedStandardOutput);
+
+    if (vcpkgExitCode != 0)
+    {
+        throw new Exception("Could not find `nuget.exe`");
+    }
+
+    var vcpkgStandardOutput = vcpkgRedirectedStandardOutput.ToList();
+    var vcpkgNuGetPath = vcpkgStandardOutput.FirstOrDefault(vcpkgOutputLine => vcpkgOutputLine.Contains("nuget.exe"));
+    if (vcpkgNuGetPath is null)
+    {
+        throw new Exception("Could not find `nuget.exe`");
+    }
+    return File(vcpkgNuGetPath);
+}
+
+
 internal string DotNetRuntimeIdentifier(string vcpkgTriplet)
 {
     if (vcpkgTriplet == "x64-linux-dynamic-release")
@@ -163,6 +189,45 @@ internal static ProcessArgumentBuilder AppendRange(this ProcessArgumentBuilder b
 Task("Clean").Does(() => 
 {
     CleanDirectory(artifactsRoot);
+});
+
+Task("Setup-Vcpkg-NuGet-Credentials").Does(() =>
+{
+    var nugetExecutablePath = FindVcpkgNuGetExecutable(vcpkgRoot);
+    var nugetSourceName = Argument<string>("name");
+    var nugetSource = Argument<string>("source");
+    var nugetUsername = Argument<string>("username", null);
+    var nugetPassword = Argument<string>("password", null);
+    var nugetApiKey = Argument<string>("apikey", null);
+    var nugetStorePasswordInClearText = Argument<bool>("storepasswordincleartext", false);
+    var nugetSourceSettings = new NuGetSourcesSettings
+    {
+        IsSensitiveSource = true,
+        StorePasswordInClearText = nugetStorePasswordInClearText,
+        ToolPath = nugetExecutablePath
+    };
+
+    if (nugetUsername is not null)
+    {
+        nugetSourceSettings.UserName = nugetUsername;
+    }
+
+    if (nugetPassword is not null)
+    {
+        nugetSourceSettings.Password = nugetPassword;
+    }
+
+    NuGetAddSource(nugetSourceName, nugetSource, nugetSourceSettings);
+
+    if (nugetApiKey is not null)
+    {
+        var nugetSetApiKeySettings = new NuGetSetApiKeySettings
+        {
+            ToolPath = nugetExecutablePath
+        };
+
+        NuGetSetApiKey(nugetApiKey, nugetSource, nugetSetApiKeySettings);
+    }
 });
 
 Task("Restore").DoesForEach(() => Arguments<string>("triplet"), vcpkgTriplet =>
