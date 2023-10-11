@@ -43,7 +43,7 @@ jobs:
         source-url: https://pkgs.dev.azure.com/ronaldvanmanen/_packaging/ronaldvanmanen/nuget/v3/index.json
       env:
         NUGET_AUTH_TOKEN: ${{ secrets.AZURE_DEVOPS_PAT }}
-    - name: Set up NuGet Credentials
+    - name: Set up DotNet NuGet Credentials
       run: >
         dotnet nuget update source azure
         --username GitHub
@@ -95,7 +95,7 @@ jobs:
         source-url: https://pkgs.dev.azure.com/ronaldvanmanen/_packaging/ronaldvanmanen/nuget/v3/index.json
       env:
         NUGET_AUTH_TOKEN: ${{ secrets.AZURE_DEVOPS_PAT }}
-    - name: Set up NuGet Credentials
+    - name: Set up DotNet NuGet Credentials
       run: >
         dotnet nuget update source azure
         --username GitHub
