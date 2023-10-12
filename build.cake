@@ -196,6 +196,7 @@ Task("Setup-Vcpkg-NuGet-Credentials").Does(() =>
     var nugetExecutablePath = FindVcpkgNuGetExecutable(vcpkgRoot);
     var nugetSourceName = Argument<string>("name");
     var nugetSource = Argument<string>("source");
+    var nugetConfigFile = Argument<string>("configfile", null);
     var nugetUsername = Argument<string>("username", null);
     var nugetPassword = Argument<string>("password", null);
     var nugetApiKey = Argument<string>("apikey", null);
@@ -206,6 +207,11 @@ Task("Setup-Vcpkg-NuGet-Credentials").Does(() =>
         StorePasswordInClearText = nugetStorePasswordInClearText,
         ToolPath = nugetExecutablePath
     };
+
+    if (nugetConfigFile is not null)
+    {
+        nugetSourceSettings.ConfigFile = nugetConfigFile;
+    }
 
     if (nugetUsername is not null)
     {
@@ -225,6 +231,11 @@ Task("Setup-Vcpkg-NuGet-Credentials").Does(() =>
         {
             ToolPath = nugetExecutablePath
         };
+
+        if (nugetConfigFile is not null)
+        {
+            nugetSetApiKeySettings.ConfigFile = nugetConfigFile;
+        }
 
         NuGetSetApiKey(nugetApiKey, nugetSource, nugetSetApiKeySettings);
     }
