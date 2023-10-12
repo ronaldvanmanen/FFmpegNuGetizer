@@ -233,11 +233,13 @@ Task("Setup-Vcpkg-NuGet-Credentials").Does(() =>
 Task("Restore").DoesForEach(() => Arguments<string>("triplet"), vcpkgTriplet =>
 {
     var vcpkgFeature = Argument<string>("feature");
+    var vcpkgBinarySources = Arguments<string>("binarysource");
+    var vcpkgDebug = HasEnvironmentVariable("RUNNER_DEBUG");
+
     var vcpkgBuildtreesRoot = VcpkgBuildtreesRoot(vcpkgFeature, vcpkgTriplet);
     var vcpkgDownloadsRoot = VcpkgDownloadsRoot(vcpkgFeature, vcpkgTriplet);
     var vcpkgInstallRoot = VcpkgInstallRoot(vcpkgFeature, vcpkgTriplet);
     var vcpkgPackagesRoot = VcpkgPackagesRoot(vcpkgFeature, vcpkgTriplet);
-    var vcpkgBinarySources = Arguments<string>("binarysource");
 
     EnsureDirectoriesExists(
         vcpkgBuildtreesRoot,
@@ -246,23 +248,26 @@ Task("Restore").DoesForEach(() => Arguments<string>("triplet"), vcpkgTriplet =>
         vcpkgPackagesRoot);
 
     var vcpkgExecutable = FindVcpkgExecutable(vcpkgRoot);
-    var exitCode = StartProcess(vcpkgExecutable, new ProcessSettings {
-        Arguments = new ProcessArgumentBuilder()
-            .Append($"install")
-            .Append($"--only-binarycaching")
-            .Append($"--triplet={vcpkgTriplet}")
-            .Append($"--downloads-root={vcpkgDownloadsRoot}")
-            .Append($"--x-buildtrees-root={vcpkgBuildtreesRoot}")
-            .Append($"--x-install-root={vcpkgInstallRoot}")
-            .Append($"--x-packages-root={vcpkgPackagesRoot}")
-            .Append($"--x-no-default-features")
-            .Append($"--x-feature={vcpkgFeature}")
-            .Append($"--clean-after-build")
-            .Append($"--disable-metrics")
-            .AppendRange(vcpkgBinarySources.Select(vcpkgBinarySource => $"--binarysource={vcpkgBinarySource}"))
-        }
-    );
+    var vcpkgArguments = new ProcessArgumentBuilder()
+        .Append($"install")
+        .Append($"--only-binarycaching")
+        .Append($"--triplet={vcpkgTriplet}")
+        .Append($"--downloads-root={vcpkgDownloadsRoot}")
+        .Append($"--x-buildtrees-root={vcpkgBuildtreesRoot}")
+        .Append($"--x-install-root={vcpkgInstallRoot}")
+        .Append($"--x-packages-root={vcpkgPackagesRoot}")
+        .Append($"--x-no-default-features")
+        .Append($"--x-feature={vcpkgFeature}")
+        .Append($"--clean-after-build")
+        .Append($"--disable-metrics")
+        .AppendRange(vcpkgBinarySources.Select(vcpkgBinarySource => $"--binarysource={vcpkgBinarySource}"));
 
+    if (vcpkgDebug)
+    {
+        vcpkgArguments.Append("--debug");
+    }
+
+    var exitCode = StartProcess(vcpkgExecutable, new ProcessSettings { Arguments = vcpkgArguments });
     if (exitCode != 0)
     {
         throw new Exception("Failed to restore packages.");
@@ -272,11 +277,13 @@ Task("Restore").DoesForEach(() => Arguments<string>("triplet"), vcpkgTriplet =>
 Task("Build").DoesForEach(() => Arguments<string>("triplet"), vcpkgTriplet =>
 {
     var vcpkgFeature = Argument<string>("feature");
+    var vcpkgBinarySources = Arguments<string>("binarysource", Array.Empty<string>());
+    var vcpkgDebug = HasEnvironmentVariable("RUNNER_DEBUG");
+
     var vcpkgBuildtreesRoot = VcpkgBuildtreesRoot(vcpkgFeature, vcpkgTriplet);
     var vcpkgDownloadsRoot = VcpkgDownloadsRoot(vcpkgFeature, vcpkgTriplet);
     var vcpkgInstallRoot = VcpkgInstallRoot(vcpkgFeature, vcpkgTriplet);
     var vcpkgPackagesRoot = VcpkgPackagesRoot(vcpkgFeature, vcpkgTriplet);
-    var vcpkgBinarySources = Arguments<string>("binarysource", Array.Empty<string>());
 
     EnsureDirectoriesExists(
         vcpkgBuildtreesRoot,
@@ -285,22 +292,25 @@ Task("Build").DoesForEach(() => Arguments<string>("triplet"), vcpkgTriplet =>
         vcpkgPackagesRoot);
 
     var vcpkgExecutable = FindVcpkgExecutable(vcpkgRoot);
-    var exitCode = StartProcess(vcpkgExecutable, new ProcessSettings {
-        Arguments = new ProcessArgumentBuilder()
-            .Append($"install")
-            .Append($"--triplet={vcpkgTriplet}")
-            .Append($"--downloads-root={vcpkgDownloadsRoot}")
-            .Append($"--x-buildtrees-root={vcpkgBuildtreesRoot}")
-            .Append($"--x-install-root={vcpkgInstallRoot}")
-            .Append($"--x-packages-root={vcpkgPackagesRoot}")
-            .Append($"--x-no-default-features")
-            .Append($"--x-feature={vcpkgFeature}")
-            .Append($"--clean-after-build")
-            .Append($"--disable-metrics")
-            .AppendRange(vcpkgBinarySources.Select(vcpkgBinarySource => $"--binarysource={vcpkgBinarySource}"))
-        }
-    );
+    var vcpkgArguments = new ProcessArgumentBuilder()
+        .Append($"install")
+        .Append($"--triplet={vcpkgTriplet}")
+        .Append($"--downloads-root={vcpkgDownloadsRoot}")
+        .Append($"--x-buildtrees-root={vcpkgBuildtreesRoot}")
+        .Append($"--x-install-root={vcpkgInstallRoot}")
+        .Append($"--x-packages-root={vcpkgPackagesRoot}")
+        .Append($"--x-no-default-features")
+        .Append($"--x-feature={vcpkgFeature}")
+        .Append($"--clean-after-build")
+        .Append($"--disable-metrics")
+        .AppendRange(vcpkgBinarySources.Select(vcpkgBinarySource => $"--binarysource={vcpkgBinarySource}"));
 
+    if (vcpkgDebug)
+    {
+        vcpkgArguments.Append("--debug");
+    }
+
+    var exitCode = StartProcess(vcpkgExecutable, new ProcessSettings { Arguments = vcpkgArguments });
     if (exitCode != 0)
     {
         throw new Exception("Failed to build and install packages.");
