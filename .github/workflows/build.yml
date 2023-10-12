@@ -63,8 +63,8 @@ jobs:
       uses: actions/upload-artifact@v3
       if: success() || failure()
       with:
-        name: vcpkg
-        path: ./artifacts/vcpkg/vcpkg-*.zip
+        name: vcpkg-${{ matrix.feature }}
+        path: ./artifacts/vcpkg/vcpkg-${{ matrix.feature }}-${{ matrix.triplet }}.zip
         if-no-files-found: error
   pack:
     name: Pack (${{ matrix.feature }})
@@ -90,7 +90,7 @@ jobs:
     - name: Download Port Packages
       uses: actions/download-artifact@v3
       with:
-        name: vcpkg
+        name: vcpkg-${{ matrix.feature }}
         path: ./artifacts/vcpkg
     - name: Unzip Port Packages
       run: 7z x ./artifacts/vcpkg/vcpkg-${{ matrix.feature }}-*.zip -o./artifacts/vcpkg/ -y
