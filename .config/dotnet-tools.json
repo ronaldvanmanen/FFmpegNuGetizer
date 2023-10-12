@@ -2,12 +2,6 @@
   "version": 1,
   "isRoot": true,
   "tools": {
-    "gitversion.tool": {
-      "version": "5.10.3",
-      "commands": [
-        "dotnet-gitversion"
-      ]
-    },
     "cake.tool": {
       "version": "3.1.0",
       "commands": [
