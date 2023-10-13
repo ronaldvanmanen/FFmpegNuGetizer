@@ -93,7 +93,7 @@ jobs:
         name: vcpkg-${{ matrix.feature }}
         path: ./artifacts/vcpkg
     - name: Unzip Port Packages
-      run: 7z x ./artifacts/vcpkg/vcpkg-${{ matrix.feature }}-*.zip -o./artifacts/vcpkg/ -y
+      run: 7z x './artifacts/vcpkg/vcpkg-${{ matrix.feature }}-*.zip' -o./artifacts/vcpkg/ -y
     - name: Set up DotNet
       uses: actions/setup-dotnet@v3
       with:
