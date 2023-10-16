@@ -339,8 +339,8 @@ Task("Pack-Multiplatform-Package").Does(() =>
 
     var vcpkgFeature = Argument<string>("feature");
     var vcpkgTriplets = Arguments<string>("triplet");
+    
     var gitVersion = GitVersion();
-
     var nugetPackageVersion = gitVersion.NuGetVersion;
     var nugetPackageLicense = Argument<string>("license");
     var nugetPackageName = NuGetMultiplatformPackageName(vcpkgFeature);
@@ -352,10 +352,14 @@ Task("Pack-Multiplatform-Package").Does(() =>
     var nugetRuntimeGraph = new RuntimeGraph(
         vcpkgTriplets.Select(vcpkgTriplet => {
             var dotnetRuntimeIdentifier = DotNetRuntimeIdentifier(vcpkgTriplet);
-            var nugetRuntimePackageId = $"FFmpeg.{vcpkgFeature}.runtime.{dotnetRuntimeIdentifier}";
-            var nugetRuntimePackageDependency = new RuntimePackageDependency(nugetRuntimePackageId, nugetRuntimePackageVersion);
-            var nugetRuntimeDependencySet = new RuntimeDependencySet("FFmpeg", new [] { nugetRuntimePackageDependency });
-            var nugetRuntimeDescription = new RuntimeDescription(dotnetRuntimeIdentifier, new [] { nugetRuntimeDependencySet });
+            var nugetRuntimePackageName = NuGetRuntimePackageName(vcpkgFeature, vcpkgTriplet);
+            var nugetRuntimeDescription = new RuntimeDescription(dotnetRuntimeIdentifier, new []
+            {
+                new RuntimeDependencySet(nugetPackageName, new []
+                {
+                    new RuntimePackageDependency(nugetRuntimePackageName, nugetRuntimePackageVersion)
+                })
+            });
             return nugetRuntimeDescription;
         }));
     var nugetRuntimeFile = nugetPackageDir + File("runtime.json");
