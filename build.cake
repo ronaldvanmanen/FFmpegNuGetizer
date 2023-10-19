@@ -16,6 +16,7 @@
 // USINGS
 //////////////////////////////////////////////////////////////////////
 
+using System.Text.RegularExpressions;
 using Cake.Common.IO.Paths;
 using NuGet.RuntimeModel;
 using NuGet.Versioning;
@@ -80,32 +81,6 @@ internal ConvertableFilePath FindVcpkgExecutable(ConvertableDirectoryPath search
 
     throw new PlatformNotSupportedException();
 }
-
-internal ConvertableFilePath FindVcpkgNuGetExecutable(ConvertableDirectoryPath searchPath)
-{
-    var vcpkgExecutable = FindVcpkgExecutable(searchPath);
-    var vcpkgExitCode = StartProcess(vcpkgExecutable,
-        new ProcessSettings {
-            Arguments = new ProcessArgumentBuilder().Append("fetch").Append("nuget"),
-            RedirectStandardError = true,
-            RedirectStandardOutput = true
-        },
-        out var vcpkgRedirectedStandardOutput);
-
-    if (vcpkgExitCode != 0)
-    {
-        throw new Exception("Could not find `nuget.exe`");
-    }
-
-    var vcpkgStandardOutput = vcpkgRedirectedStandardOutput.ToList();
-    var vcpkgNuGetPath = vcpkgStandardOutput.FirstOrDefault(vcpkgOutputLine => vcpkgOutputLine.Contains("nuget.exe"));
-    if (vcpkgNuGetPath is null)
-    {
-        throw new Exception("Could not find `nuget.exe`");
-    }
-    return File(vcpkgNuGetPath);
-}
-
 
 internal string DotNetRuntimeIdentifier(string vcpkgTriplet)
 {
@@ -182,6 +157,95 @@ internal static ProcessArgumentBuilder AppendRange(this ProcessArgumentBuilder b
     return builder;
 }
 
+internal sealed class NuGetSourceInfo
+{
+    public string Name { get; set; }
+    public string Source { get; set; }
+    public bool IsEnabled { get; set; }
+}
+
+internal IEnumerable<NuGetSourceInfo> NuGetListSources(string configFile)
+{
+    var executable = Context.Tools.Resolve(new string[] { "nuget", "nuget.exe" });
+    var arguments = new ProcessArgumentBuilder()
+        .Append("sources")
+        .Append("List")
+        .Append("-Format Detailed");
+
+    if (configFile is not null)
+    {
+        arguments.Append($"-ConfigFile {configFile}");
+    }
+
+    var exitCode = StartProcess(executable,
+        new ProcessSettings
+        {
+            Arguments = arguments,
+            RedirectStandardOutput = true
+        },
+        out var redirectedStandardOutput);
+
+    if (exitCode != 0)
+    {
+        throw new Exception("Failed to execute `nuget sources list [...]`");
+    }
+
+    var outputLines = redirectedStandardOutput.ToList();
+    for (var index = 1; index < outputLines.Count - 1; index += 2)
+    {
+        var match = Regex.Match(outputLines[index], "^\\s*\\d+\\.\\s+(?<SourceName>.+)\\s+\\[(?<SourceState>[^\\]]+)\\]");
+        if (match.Success)
+        {
+            var name = match.Groups["SourceName"].Value;
+            var state = match.Groups["SourceState"].Value;
+            var source = outputLines[index + 1].Trim();
+            yield return new NuGetSourceInfo
+            {
+                Name = name,
+                Source = source,
+                IsEnabled = state == "Enabled"
+            };
+        }
+    }
+}
+
+internal void NuGetUpdateSource(string name, string source, NuGetSourcesSettings settings)
+{
+    var executable = Context.Tools.Resolve(new string[] { "nuget", "nuget.exe" });
+    var arguments = new ProcessArgumentBuilder()
+        .Append($"sources")
+        .Append($"Update")
+        .Append($"-Name {name}")
+        .Append($"-Source {source}");
+
+    if (settings.UserName is not null)
+    {
+        arguments.Append($"-Username {settings.UserName}");
+    }
+
+    if (settings.Password is not null)
+    {
+        arguments.Append($"-Password {settings.Password}");
+    }
+
+    if (settings.StorePasswordInClearText)
+    {
+        arguments.Append($"-StorePasswordInClearText");
+    }
+    
+
+    if (settings.ConfigFile is not null)
+    {
+        arguments.Append($"-ConfigFile {settings.ConfigFile}");
+    }
+
+    var exitCode = StartProcess(executable, new ProcessSettings { Arguments = arguments });
+    if (exitCode != 0)
+    {
+        throw new Exception("Failed to execute `nuget sources update [...]`");
+    }
+}
+
 //////////////////////////////////////////////////////////////////////
 // TASKS
 //////////////////////////////////////////////////////////////////////
@@ -191,53 +255,29 @@ Task("Clean").Does(() =>
     CleanDirectory(artifactsRoot);
 });
 
-Task("Setup-Vcpkg-NuGet-Credentials").Does(() =>
+Task("Setup-NuGet-Sources").Does(() =>
 {
-    var nugetExecutablePath = FindVcpkgNuGetExecutable(vcpkgRoot);
-    var nugetSourceName = Argument<string>("name");
-    var nugetSource = Argument<string>("source");
-    var nugetConfigFile = Argument<string>("configfile", null);
-    var nugetUsername = Argument<string>("username", null);
-    var nugetPassword = Argument<string>("password", null);
-    var nugetApiKey = Argument<string>("apikey", null);
-    var nugetStorePasswordInClearText = Argument<bool>("storepasswordincleartext", false);
-    var nugetSourceSettings = new NuGetSourcesSettings
-    {
-        IsSensitiveSource = true,
-        StorePasswordInClearText = nugetStorePasswordInClearText,
-        ToolPath = nugetExecutablePath
-    };
+    var username = Argument<string>("username", null);
+    var password = Argument<string>("password", null);
+    var configFile = Argument<string>("configfile", null);
+    var apiKey = Argument<string>("apikey", null);
 
-    if (nugetConfigFile is not null)
+    var sources = NuGetListSources(configFile);
+    var privateSources = sources.Where(e => e.Source.Contains("azure"));
+    foreach (var privateSource in privateSources)
     {
-        nugetSourceSettings.ConfigFile = nugetConfigFile;
-    }
-
-    if (nugetUsername is not null)
-    {
-        nugetSourceSettings.UserName = nugetUsername;
-    }
-
-    if (nugetPassword is not null)
-    {
-        nugetSourceSettings.Password = nugetPassword;
-    }
-
-    NuGetAddSource(nugetSourceName, nugetSource, nugetSourceSettings);
-
-    if (nugetApiKey is not null)
-    {
-        var nugetSetApiKeySettings = new NuGetSetApiKeySettings
+        NuGetUpdateSource(privateSource.Name, privateSource.Source, new NuGetSourcesSettings
         {
-            ToolPath = nugetExecutablePath
-        };
+            UserName = username,
+            Password = password,
+            StorePasswordInClearText = true,
+            ConfigFile = configFile
+        });
 
-        if (nugetConfigFile is not null)
+        NuGetSetApiKey(apiKey, privateSource.Source, new NuGetSetApiKeySettings
         {
-            nugetSetApiKeySettings.ConfigFile = nugetConfigFile;
-        }
-
-        NuGetSetApiKey(nugetApiKey, nugetSource, nugetSetApiKeySettings);
+            ConfigFile = configFile
+        });
     }
 });
 
