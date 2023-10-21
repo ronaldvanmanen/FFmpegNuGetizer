@@ -42,7 +42,7 @@ jobs:
         dotnet-version: '6.0.x'
     - name: Set up NuGet Sources
       run: >
-        ./build.sh
+        ${{ matrix.build }}
         --target setup-nuget-sources
         --username GitHub
         --password ${{ secrets.AZURE_DEVOPS_PAT }}
