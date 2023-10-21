@@ -388,7 +388,7 @@ Task("Pack-Multiplatform-Package").Does(() =>
 
     EnsureDirectoriesExists(nugetPackageDir);
 
-    var nugetRuntimePackageVersion = new VersionRange(new NuGetVersion("4.4.4"));
+    var nugetRuntimePackageVersion = new VersionRange(new NuGetVersion(nugetPackageVersion));
     var nugetRuntimeGraph = new RuntimeGraph(
         vcpkgTriplets.Select(vcpkgTriplet => {
             var dotnetRuntimeIdentifier = DotNetRuntimeIdentifier(vcpkgTriplet);
