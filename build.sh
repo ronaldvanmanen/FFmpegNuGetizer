@@ -3,13 +3,6 @@ set -euox pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
-export VCPKG_DISABLE_METRICS=1
-./vcpkg/bootstrap-vcpkg.sh -disableMetrics
-LAST_EXITCODE=$?
-if [ $LAST_EXITCODE != 0 ]; then
-    return "$LAST_EXITCODE"
-fi
-
 sudo apt-get update && sudo apt-get install nasm libgl-dev libglfw3-dev
 LAST_EXITCODE=$?
 if [ "$LAST_EXITCODE" != 0 ]; then

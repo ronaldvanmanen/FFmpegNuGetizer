@@ -99,6 +99,31 @@ internal void EnsureDirectoriesExists(params ConvertableDirectoryPath[] paths)
     }
 }
 
+internal ConvertableFilePath FindVcpkgBootstrapScript(ConvertableDirectoryPath searchPath)
+{
+    if (IsRunningOnLinux())
+    {
+        var scriptPath = searchPath + File("bootstrap-vcpkg.sh");
+        if (!FileExists(scriptPath))
+        {
+            throw new Exception("Could not find `bootstrap-vcpkg.sh`");
+        }
+        return scriptPath;
+    }
+
+    if (IsRunningOnWindows())
+    {
+        var scriptPath = searchPath + File("bootstrap-vcpkg.bat");
+        if (!FileExists(scriptPath))
+        {
+            throw new Exception("Could not find `bootstrap-vcpkg.bat`");
+        }
+        return scriptPath;
+    }
+
+    throw new PlatformNotSupportedException();
+}
+
 internal ConvertableFilePath FindVcpkgExecutable(ConvertableDirectoryPath searchPath)
 {
     if (IsRunningOnLinux())
@@ -300,6 +325,16 @@ internal void NuGetAddOrUpdateSource(string name, string source, NuGetSourcesSet
 Task("Clean").Does(() => 
 {
     CleanDirectory(artifactsRoot);
+});
+
+Task("Setup-Vcpkg").Does(() =>
+{
+    var vcpkgBootstrapScript = FindVcpkgBootstrapScript(vcpkgRoot);
+    var exitCode = StartProcess(vcpkgBootstrapScript, "-disableMetrics");
+    if (exitCode != 0)
+    {
+        throw new Exception("Failed to bootstrap `vcpkg`.");
+    }
 });
 
 Task("Setup-NuGet-Sources").Does(() =>

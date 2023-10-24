@@ -40,6 +40,10 @@ jobs:
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: '6.0.x'
+    - name: Set up Vcpkg
+      run: >
+        ${{ matrix.build }}
+        --target setup-vcpkg
     - name: Set up NuGet Sources
       run: >
         ${{ matrix.build }}

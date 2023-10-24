@@ -11,12 +11,6 @@ Set-Location -LiteralPath $PSScriptRoot
 # https://github.com/microsoft/vcpkg/issues/31823
 $env:VCPKG_MAX_CONCURRENCY = '1'
 
-$env:VCPKG_DISABLE_METRICS = '1'
-.\vcpkg\bootstrap-vcpkg.bat -disableMetrics
-if ($LASTEXITCODE -ne 0) {
-    exit $LASTEXITCODE
-}
-
 $env:DOTNET_SKIP_FIRST_TIME_EXPERIENCE = '1'
 $env:DOTNET_CLI_TELEMETRY_OPTOUT = '1'
 $env:DOTNET_NOLOGO = '1'
