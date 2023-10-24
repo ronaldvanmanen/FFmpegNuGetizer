@@ -351,9 +351,10 @@ Task("Setup-NuGet-Sources").Does(() =>
             ConfigFile = configFile
         });
 
-        if (!string.IsNullOrEmpty(nugetSource.ApiKey))
+        var apikey = ArgumentOrEnvironmentVariable(nugetSource.ApiKey, null);
+        if (apikey is not null)
         {
-            NuGetSetApiKey(nugetSource.ApiKey, nugetSource.Source, new NuGetSetApiKeySettings
+            NuGetSetApiKey(apikey, nugetSource.Source, new NuGetSetApiKeySettings
             {
                 ConfigFile = configFile
             });
@@ -655,6 +656,7 @@ Task("Publish").Does(() =>
             DotNetNuGetPush(file, new DotNetNuGetPushSettings
             {
                 Source = nugetSource.Source,
+                ApiKey = ArgumentOrEnvironmentVariable(nugetSource.ApiKey, null),
                 SkipDuplicate = true
             });
         }

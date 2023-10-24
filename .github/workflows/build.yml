@@ -155,5 +155,8 @@ jobs:
         --configfile ./NuGet.config
     - name: Push NuGet packages
       run: >
-        ./build.sh --target publish
+        ./build.sh
+        --target publish
+        --azure-apikey AzureDevOps
+        --github-apikey ${{ secrets.GITHUB_TOKEN }}
       shell: bash
