@@ -2,6 +2,7 @@
 // ADD-INS
 //////////////////////////////////////////////////////////////////////
 
+#addin nuget:?package=Cake.ArgumentHelpers&version=1.0.0
 #addin nuget:?package=Cake.FileHelpers&version=6.1.3
 #addin nuget:?package=Cake.Git&version=3.0.0
 #addin nuget:?package=NuGet.Packaging&Version=6.6.1&loaddependencies=true
@@ -22,7 +23,7 @@ using NuGet.RuntimeModel;
 using NuGet.Versioning;
 
 //////////////////////////////////////////////////////////////////////
-// PATHS
+// VARIABLES
 //////////////////////////////////////////////////////////////////////
 
 var repoRoot = GitFindRootFromPath(Context.Environment.WorkingDirectory);
@@ -34,6 +35,47 @@ var vcpkgArtifactsRoot = artifactsRoot + Directory("vcpkg");
 var nugetArtifactsRoot = artifactsRoot + Directory("nuget");
 var nugetBuildRoot = nugetArtifactsRoot + Directory("build");
 var nugetInstallRoot = nugetArtifactsRoot + Directory("installed");
+
+internal sealed class NuGetSourceInfo
+{
+    public string Name { get; set; }
+    public string Source { get; set; }
+    public string UserName { get; set; }
+    public string Password { get; set; }
+    public string ApiKey { get; set; }
+    public bool IsEnabled { get; set; }
+}
+
+var nugetSources = new NuGetSourceInfo[]
+{
+    new NuGetSourceInfo
+    {
+        Name = "azure",
+        Source = "https://pkgs.dev.azure.com/ronaldvanmanen/_packaging/ronaldvanmanen/nuget/v3/index.json",
+        UserName = "azure-username",
+        Password = "azure-password",
+        ApiKey = "azure-apikey",
+        IsEnabled = true
+    },
+    new NuGetSourceInfo
+    {
+        Name = "azure-vcpkg-binary-cache",
+        Source = "https://pkgs.dev.azure.com/ronaldvanmanen/_packaging/vcpkg/nuget/v3/index.json",
+        UserName = "azure-username",
+        Password = "azure-password",
+        ApiKey = "azure-apikey",
+        IsEnabled = true
+    },
+    new NuGetSourceInfo
+    {
+        Name = "github",
+        Source = "https://nuget.pkg.github.com/ronaldvanmanen/index.json",
+        UserName = "github-username",
+        Password = "github-password",
+        ApiKey = "github-apikey",
+        IsEnabled = true
+    }
+};
 
 //////////////////////////////////////////////////////////////////////
 // METHODS
@@ -157,13 +199,6 @@ internal static ProcessArgumentBuilder AppendRange(this ProcessArgumentBuilder b
     return builder;
 }
 
-internal sealed class NuGetSourceInfo
-{
-    public string Name { get; set; }
-    public string Source { get; set; }
-    public bool IsEnabled { get; set; }
-}
-
 internal IEnumerable<NuGetSourceInfo> NuGetListSources(string configFile)
 {
     var executable = Context.Tools.Resolve(new string[] { "nuget", "nuget.exe" });
@@ -246,6 +281,18 @@ internal void NuGetUpdateSource(string name, string source, NuGetSourcesSettings
     }
 }
 
+internal void NuGetAddOrUpdateSource(string name, string source, NuGetSourcesSettings settings)
+{
+    if (NuGetHasSource(source))
+    {
+        NuGetUpdateSource(name, source, settings);
+    }
+    else
+    {
+        NuGetAddSource(name, source, settings);
+    }
+}
+
 //////////////////////////////////////////////////////////////////////
 // TASKS
 //////////////////////////////////////////////////////////////////////
@@ -257,27 +304,25 @@ Task("Clean").Does(() =>
 
 Task("Setup-NuGet-Sources").Does(() =>
 {
-    var username = Argument<string>("username", null);
-    var password = Argument<string>("password", null);
-    var configFile = Argument<string>("configfile", null);
-    var apiKey = Argument<string>("apikey", null);
+    var configFile = Argument<string>("configfile");
 
-    var sources = NuGetListSources(configFile);
-    var privateSources = sources.Where(e => e.Source.Contains("azure"));
-    foreach (var privateSource in privateSources)
+    foreach (var nugetSource in nugetSources)
     {
-        NuGetUpdateSource(privateSource.Name, privateSource.Source, new NuGetSourcesSettings
+        NuGetAddOrUpdateSource(nugetSource.Name, nugetSource.Source, new NuGetSourcesSettings
         {
-            UserName = username,
-            Password = password,
+            UserName = ArgumentOrEnvironmentVariable(nugetSource.UserName, null),
+            Password = ArgumentOrEnvironmentVariable(nugetSource.Password, null),
             StorePasswordInClearText = true,
             ConfigFile = configFile
         });
 
-        NuGetSetApiKey(apiKey, privateSource.Source, new NuGetSetApiKeySettings
+        if (!string.IsNullOrEmpty(nugetSource.ApiKey))
         {
-            ConfigFile = configFile
-        });
+            NuGetSetApiKey(nugetSource.ApiKey, nugetSource.Source, new NuGetSetApiKeySettings
+            {
+                ConfigFile = configFile
+            });
+        }
     }
 });
 
@@ -547,6 +592,22 @@ Task("Pack-Runtime-Package").DoesForEach(() => Arguments<string>("triplet"), (vc
     }
 
     NuGetPack(nugetPackSettings);
+});
+
+Task("Publish").Does(() =>
+{
+    var files = GetFiles($"{nugetInstallRoot}/**/*.nupkg");
+    foreach(var file in files)
+    {
+        foreach (var nugetSource in nugetSources)
+        {
+            DotNetNuGetPush(file, new DotNetNuGetPushSettings
+            {
+                Source = nugetSource.Source,
+                SkipDuplicate = true
+            });
+        }
+    }
 });
 
 //////////////////////////////////////////////////////////////////////

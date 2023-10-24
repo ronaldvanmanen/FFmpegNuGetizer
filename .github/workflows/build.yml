@@ -44,12 +44,13 @@ jobs:
       run: >
         ${{ matrix.build }}
         --target setup-nuget-sources
-        --username GitHub
-        --password ${{ secrets.AZURE_DEVOPS_PAT }}
-        --apikey AzureDevOps
+        --azure-username GitHub
+        --azure-password ${{ secrets.AZURE_DEVOPS_PAT }}
+        --azure-apikey AzureDevOps
+        --github-apikey ${{ secrets.GITHUB_TOKEN }}
         --configfile ./NuGet.config
     - name: Build and Install Port Packages
-      run: ${{ matrix.build }} --target build --feature ${{ matrix.feature }} --triplet ${{ matrix.triplet }} --binarysource 'clear;nuget,vcpkg,readwrite'
+      run: ${{ matrix.build }} --target build --feature ${{ matrix.feature }} --triplet ${{ matrix.triplet }} --binarysource 'clear;nuget,azure-vcpkg-binary-cache,readwrite'
     - name: Zip Port Packages
       run: 7z a ./artifacts/vcpkg/vcpkg-${{ matrix.feature }}-${{ matrix.triplet }}.zip ./artifacts/vcpkg/* -sdel
       if: success() || failure()
@@ -92,6 +93,15 @@ jobs:
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: '6.0.x'
+    - name: Set up NuGet Sources
+      run: >
+        ./build.sh
+        --target setup-nuget-sources
+        --azure-username GitHub
+        --azure-password ${{ secrets.AZURE_DEVOPS_PAT }}
+        --azure-apikey AzureDevOps
+        --github-apikey ${{ secrets.GITHUB_TOKEN }}
+        --configfile ./NuGet.config
     - name: Build NuGet Packages.
       run: >
         ./build.sh --target pack
@@ -107,11 +117,16 @@ jobs:
         name: nuget
         path: ./artifacts/nuget/installed/**/*
         if-no-files-found: error
-  publish-azure:
-    name: Publish on Azure
+  publish:
+    name: Publish
     runs-on: ubuntu-latest
     needs: [ pack ]
     steps:
+    - name: Checkout Git Repository
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+        submodules: true
     - name: Download NuGet Packages
       uses: actions/download-artifact@v3
       with:
@@ -121,38 +136,16 @@ jobs:
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: '6.0.x'
-        source-url: https://pkgs.dev.azure.com/ronaldvanmanen/_packaging/ronaldvanmanen/nuget/v3/index.json
-      env:
-        NUGET_AUTH_TOKEN: ${{ secrets.AZURE_DEVOPS_PAT }}
+    - name: Set up NuGet Sources
+      run: >
+        ./build.sh
+        --target setup-nuget-sources
+        --azure-username GitHub
+        --azure-password ${{ secrets.AZURE_DEVOPS_PAT }}
+        --azure-apikey AzureDevOps
+        --github-apikey ${{ secrets.GITHUB_TOKEN }}
+        --configfile ./NuGet.config
     - name: Push NuGet packages
       run: >
-        dotnet nuget push "./artifacts/nuget/installed/**/*.nupkg"
-        --api-key AzureDevOps
-        --skip-duplicate
-      shell: bash
-  publish-github:
-    name: Publish on GitHub
-    runs-on: ubuntu-latest
-    permissions:
-      packages: write
-    needs: [ pack ]
-    steps:
-    - name: Download NuGet Packages
-      uses: actions/download-artifact@v3
-      with:
-        name: nuget
-        path: ./artifacts/nuget/installed
-    - name: Set up DotNet
-      uses: actions/setup-dotnet@v3
-      with:
-        dotnet-version: '6.0.x'
-        source-url: https://nuget.pkg.github.com/ronaldvanmanen/index.json
-      env:
-        NUGET_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    - name: Push NuGet Packages
-      run: >
-        dotnet nuget push "./artifacts/nuget/installed/**/*.nupkg"
-        --source "https://nuget.pkg.github.com/ronaldvanmanen/index.json"
-        --api-key ${{ secrets.GITHUB_TOKEN }}
-        --skip-duplicate
+        ./build.sh --target publish
       shell: bash
