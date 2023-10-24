@@ -361,6 +361,22 @@ Task("Setup-NuGet-Sources").Does(() =>
     }
 });
 
+Task("Setup-Build-Dependencies").Does(() => 
+{
+    if (IsRunningOnLinux())
+    {
+        if (0 != StartProcess("sudo", "apt-get update"))
+        {
+            throw new Exception("Failed to execute `sudo apt-get update`.");
+        }
+
+        if (0 != StartProcess("sudo", "apt-get install nasm libgl-dev libglfw3-dev"))
+        {
+            throw new Exception("Failed to execute `sudo apt-get install [...]`.");
+        }
+    }
+});
+
 Task("Restore").DoesForEach(() => Arguments<string>("triplet"), vcpkgTriplet =>
 {
     var vcpkgFeature = Argument<string>("feature");

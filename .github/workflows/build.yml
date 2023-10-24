@@ -53,6 +53,10 @@ jobs:
         --azure-apikey AzureDevOps
         --github-apikey ${{ secrets.GITHUB_TOKEN }}
         --configfile ./NuGet.config
+    - name: Set up Build Dependencies
+      run: >
+        ${{ matrix.build }}
+        --target setup-build-dependencies
     - name: Build and Install Port Packages
       run: ${{ matrix.build }} --target build --feature ${{ matrix.feature }} --triplet ${{ matrix.triplet }} --binarysource 'clear;nuget,azure-vcpkg-binary-cache,readwrite'
     - name: Zip Port Packages
