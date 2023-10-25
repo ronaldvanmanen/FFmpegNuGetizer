@@ -2,7 +2,6 @@
 // ADD-INS
 //////////////////////////////////////////////////////////////////////
 
-#addin nuget:?package=Cake.ArgumentHelpers&version=1.0.0
 #addin nuget:?package=Cake.FileHelpers&version=6.1.3
 #addin nuget:?package=Cake.Git&version=3.0.0
 #addin nuget:?package=NuGet.Packaging&Version=6.6.1&loaddependencies=true
@@ -40,40 +39,26 @@ internal sealed class NuGetSourceInfo
 {
     public string Name { get; set; }
     public string Source { get; set; }
-    public string UserName { get; set; }
-    public string Password { get; set; }
-    public string ApiKey { get; set; }
     public bool IsEnabled { get; set; }
 }
 
-var nugetSources = new NuGetSourceInfo[]
+var nugetSources = new Dictionary<string, string>
 {
-    new NuGetSourceInfo
-    {
-        Name = "azure",
-        Source = "https://pkgs.dev.azure.com/ronaldvanmanen/_packaging/ronaldvanmanen/nuget/v3/index.json",
-        UserName = "azure-username",
-        Password = "azure-password",
-        ApiKey = "azure-apikey",
-        IsEnabled = true
+    { 
+        "nuget.org",
+        "https://api.nuget.org/v3/index.json"
     },
-    new NuGetSourceInfo
     {
-        Name = "azure-vcpkg-binary-cache",
-        Source = "https://pkgs.dev.azure.com/ronaldvanmanen/_packaging/vcpkg-binary-cache/nuget/v3/index.json",
-        UserName = "azure-username",
-        Password = "azure-password",
-        ApiKey = "azure-apikey",
-        IsEnabled = true
+        "azure",
+        "https://pkgs.dev.azure.com/ronaldvanmanen/_packaging/ronaldvanmanen/nuget/v3/index.json"
     },
-    new NuGetSourceInfo
     {
-        Name = "github",
-        Source = "https://nuget.pkg.github.com/ronaldvanmanen/index.json",
-        UserName = "github-username",
-        Password = "github-password",
-        ApiKey = "github-apikey",
-        IsEnabled = true
+        "azure-vcpkg-binary-cache",
+        "https://pkgs.dev.azure.com/ronaldvanmanen/_packaging/vcpkg-binary-cache/nuget/v3/index.json"
+    },
+    {
+        "github",
+        "https://nuget.pkg.github.com/ronaldvanmanen/index.json"
     }
 };
 
@@ -308,7 +293,7 @@ internal void NuGetUpdateSource(string name, string source, NuGetSourcesSettings
 
 internal void NuGetAddOrUpdateSource(string name, string source, NuGetSourcesSettings settings)
 {
-    if (NuGetHasSource(source))
+    if (NuGetHasSource(source, settings))
     {
         NuGetUpdateSource(name, source, settings);
     }
@@ -337,28 +322,33 @@ Task("Setup-Vcpkg").Does(() =>
     }
 });
 
-Task("Setup-NuGet-Sources").Does(() =>
+Task("Setup-NuGet-Source").Does(() =>
 {
-    var configFile = Argument<string>("configfile");
-
-    foreach (var nugetSource in nugetSources)
+    var configFile = Argument<FilePath>("nuget-configfile", "NuGet.config");
+    var sourceName = Argument<string>("nuget-source");
+    var username = Argument<string>("nuget-username", null);
+    var password = Argument<string>("nuget-password", null);
+    var apikey = Argument<string>("apikey", null);
+    
+    if (!FileExists(configFile))
     {
-        NuGetAddOrUpdateSource(nugetSource.Name, nugetSource.Source, new NuGetSourcesSettings
+        FileWriteText(configFile, "<?xml version=\"1.0\" encoding=\"utf-8\"?><configuration><packageSources><clear /></packageSources></configuration>");
+    }
+
+    NuGetAddOrUpdateSource(sourceName, nugetSources[sourceName], new NuGetSourcesSettings
+    {
+        ConfigFile = configFile,
+        UserName = username,
+        Password = password,
+        StorePasswordInClearText = true
+    });
+
+    if (apikey is not null)
+    {
+        NuGetSetApiKey(apikey, nugetSources[sourceName], new NuGetSetApiKeySettings
         {
-            UserName = ArgumentOrEnvironmentVariable(nugetSource.UserName, null),
-            Password = ArgumentOrEnvironmentVariable(nugetSource.Password, null),
-            StorePasswordInClearText = true,
             ConfigFile = configFile
         });
-
-        var apikey = ArgumentOrEnvironmentVariable(nugetSource.ApiKey, null);
-        if (apikey is not null)
-        {
-            NuGetSetApiKey(apikey, nugetSource.Source, new NuGetSetApiKeySettings
-            {
-                ConfigFile = configFile
-            });
-        }
     }
 });
 
@@ -378,10 +368,10 @@ Task("Setup-Build-Dependencies").Does(() =>
     }
 });
 
-Task("Restore").DoesForEach(() => Arguments<string>("triplet"), vcpkgTriplet =>
+Task("Restore").DoesForEach(() => Arguments<string>("vcpkg-triplet"), vcpkgTriplet =>
 {
-    var vcpkgFeature = Argument<string>("feature");
-    var vcpkgBinarySources = Arguments<string>("binarysource");
+    var vcpkgFeature = Argument<string>("vcpkg-feature");
+    var vcpkgBinarySources = Arguments<string>("vcpkg-binarysource");
     var vcpkgDebug = HasEnvironmentVariable("RUNNER_DEBUG");
 
     var vcpkgBuildtreesRoot = VcpkgBuildtreesRoot(vcpkgFeature, vcpkgTriplet);
@@ -422,10 +412,10 @@ Task("Restore").DoesForEach(() => Arguments<string>("triplet"), vcpkgTriplet =>
     }
 });
 
-Task("Build").DoesForEach(() => Arguments<string>("triplet"), vcpkgTriplet =>
+Task("Build").DoesForEach(() => Arguments<string>("vcpkg-triplet"), vcpkgTriplet =>
 {
-    var vcpkgFeature = Argument<string>("feature");
-    var vcpkgBinarySources = Arguments<string>("binarysource", Array.Empty<string>());
+    var vcpkgFeature = Argument<string>("vcpkg-feature");
+    var vcpkgBinarySources = Arguments<string>("vcpkg-binarysource", Array.Empty<string>());
     var vcpkgDebug = HasEnvironmentVariable("RUNNER_DEBUG");
 
     var vcpkgBuildtreesRoot = VcpkgBuildtreesRoot(vcpkgFeature, vcpkgTriplet);
@@ -474,12 +464,12 @@ Task("Pack-Multiplatform-Package").Does(() =>
 {
     EnsureDirectoriesExists(nugetBuildRoot, nugetInstallRoot);
 
-    var vcpkgFeature = Argument<string>("feature");
-    var vcpkgTriplets = Arguments<string>("triplet");
+    var vcpkgFeature = Argument<string>("vcpkg-feature");
+    var vcpkgTriplets = Arguments<string>("vcpkg-triplet");
     
     var gitVersion = GitVersion();
     var nugetPackageVersion = gitVersion.NuGetVersion;
-    var nugetPackageLicense = Argument<string>("license");
+    var nugetPackageLicense = Argument<string>("nuget-license");
     var nugetPackageName = NuGetMultiplatformPackageName(vcpkgFeature);
     var nugetPackageDir = nugetBuildRoot + Directory(nugetPackageName);
 
@@ -581,15 +571,15 @@ Task("Pack-Multiplatform-Package").Does(() =>
     NuGetPack(nugetPackSettings);
 });
 
-Task("Pack-Runtime-Package").DoesForEach(() => Arguments<string>("triplet"), (vcpkgTriplet) => 
+Task("Pack-Runtime-Package").DoesForEach(() => Arguments<string>("vcpkg-triplet"), (vcpkgTriplet) => 
 {
     EnsureDirectoriesExists(nugetArtifactsRoot, nugetInstallRoot);
 
-    var vcpkgFeature = Argument<string>("feature");
+    var vcpkgFeature = Argument<string>("vcpkg-feature");
     var vcpkgInstallRoot = VcpkgInstallRoot(vcpkgFeature, vcpkgTriplet);
     var gitVersion = GitVersion();
     var dotnetRuntimeIdentifier = DotNetRuntimeIdentifier(vcpkgTriplet);
-    var nugetPackageLicense = Argument<string>("license");
+    var nugetPackageLicense = Argument<string>("nuget-license");
     var nugetPackageName = NuGetRuntimePackageName(vcpkgFeature, vcpkgTriplet);
     var nugetPackBasePath = vcpkgInstallRoot + Directory(vcpkgTriplet);
     var nugetPackSettings = new NuGetPackSettings
@@ -648,18 +638,19 @@ Task("Pack-Runtime-Package").DoesForEach(() => Arguments<string>("triplet"), (vc
 
 Task("Publish").Does(() =>
 {
+    var nugetSourceName = Argument<string>("nuget-source");
+    var nugetApiKey = Argument<string>("nuget-apikey");
+    var nugetPushSettings = new DotNetNuGetPushSettings
+    {
+        Source = nugetSources[nugetSourceName],
+        ApiKey = nugetApiKey,
+        SkipDuplicate = true,
+    };
+
     var files = GetFiles($"{nugetInstallRoot}/**/*.nupkg");
     foreach(var file in files)
     {
-        foreach (var nugetSource in nugetSources)
-        {
-            DotNetNuGetPush(file, new DotNetNuGetPushSettings
-            {
-                Source = nugetSource.Source,
-                ApiKey = ArgumentOrEnvironmentVariable(nugetSource.ApiKey, null),
-                SkipDuplicate = true
-            });
-        }
+        DotNetNuGetPush(file, nugetPushSettings);
     }
 });
 

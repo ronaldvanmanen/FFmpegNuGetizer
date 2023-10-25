@@ -13,23 +13,23 @@ on:
 
 jobs:
   build:
-    name: Build (${{ matrix.feature }}, ${{ matrix.triplet }})
+    name: Build (${{ matrix.vcpkg-feature }}, ${{ matrix.vcpkg-triplet }})
     runs-on: ${{ matrix.os }}-latest
     strategy:
       fail-fast: false
       matrix:
-        feature: [ no-deps, all-lgpl, all-gpl ]
-        triplet: [ x64-linux-dynamic-release, x64-windows-release, x86-windows-release ]
+        vcpkg-feature: [ no-deps, all-lgpl, all-gpl ]
+        vcpkg-triplet: [ x64-linux-dynamic-release, x64-windows-release, x86-windows-release ]
         include:
           - os: ubuntu
             build: ./build.sh
-            triplet: x64-linux-dynamic-release
+            vcpkg-triplet: x64-linux-dynamic-release
           - os: windows
             build: .\build.cmd
-            triplet: x64-windows-release
+            vcpkg-triplet: x64-windows-release
           - os: windows
             build: .\build.cmd
-            triplet: x86-windows-release
+            vcpkg-triplet: x86-windows-release
     steps:
     - name: Checkout Git Repository
       uses: actions/checkout@v3
@@ -44,45 +44,45 @@ jobs:
       run: >
         ${{ matrix.build }}
         --target setup-vcpkg
-    - name: Set up NuGet Sources
+    - name: Set up NuGet Source 'azure-vcpkg-binary-cache'
       run: >
         ${{ matrix.build }}
-        --target setup-nuget-sources
-        --azure-username GitHub
-        --azure-password ${{ secrets.AZURE_DEVOPS_PAT }}
-        --azure-apikey AzureDevOps
-        --github-apikey ${{ secrets.GITHUB_TOKEN }}
-        --configfile ./NuGet.config
+        --target setup-nuget-source
+        --nuget-source azure-vcpkg-binary-cache
+        --nuget-username GitHub
+        --nuget-password ${{ secrets.AZURE_DEVOPS_PAT }}
+        --apikey AzureDevOps
+        --nuget-configFile ./NuGet.config
     - name: Set up Build Dependencies
       run: >
         ${{ matrix.build }}
         --target setup-build-dependencies
     - name: Build and Install Port Packages
-      run: ${{ matrix.build }} --target build --feature ${{ matrix.feature }} --triplet ${{ matrix.triplet }} --binarysource 'clear;nuget,azure-vcpkg-binary-cache,readwrite'
+      run: ${{ matrix.build }} --target build --vcpkg-feature ${{ matrix.vcpkg-feature }} --vcpkg-triplet ${{ matrix.vcpkg-triplet }} --vcpkg-binarysource 'clear;nuget,azure-vcpkg-binary-cache,readwrite'
     - name: Zip Port Packages
-      run: 7z a ./artifacts/vcpkg/vcpkg-${{ matrix.feature }}-${{ matrix.triplet }}.zip ./artifacts/vcpkg/* -sdel
+      run: 7z a ./artifacts/vcpkg/vcpkg-${{ matrix.vcpkg-feature }}-${{ matrix.vcpkg-triplet }}.zip ./artifacts/vcpkg/* -sdel
       if: success() || failure()
     - name: Upload Port Packages
       uses: actions/upload-artifact@v3
       if: success() || failure()
       with:
-        name: vcpkg-${{ matrix.feature }}
-        path: ./artifacts/vcpkg/vcpkg-${{ matrix.feature }}-${{ matrix.triplet }}.zip
+        name: vcpkg-${{ matrix.vcpkg-feature }}
+        path: ./artifacts/vcpkg/vcpkg-${{ matrix.vcpkg-feature }}-${{ matrix.vcpkg-triplet }}.zip
         if-no-files-found: error
   pack:
-    name: Pack (${{ matrix.feature }})
+    name: Pack (${{ matrix.vcpkg-feature }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        feature: [ no-deps, all-lgpl, all-gpl ]
+        vcpkg-feature: [ no-deps, all-lgpl, all-gpl ]
         include:
-          - license: LGPL-2.1-or-later
-            feature: no-deps
-          - license: LGPL-2.1-or-later
-            feature: all-lgpl
-          - license: GPL-2.0-or-later
-            feature: all-gpl
+          - nuget-license: LGPL-2.1-or-later
+            vcpkg-feature: no-deps
+          - nuget-license: LGPL-2.1-or-later
+            vcpkg-feature: all-lgpl
+          - nuget-license: GPL-2.0-or-later
+            vcpkg-feature: all-gpl
     needs: [ build ]
     steps:
     - name: Checkout Git Repository
@@ -93,31 +93,22 @@ jobs:
     - name: Download Port Packages
       uses: actions/download-artifact@v3
       with:
-        name: vcpkg-${{ matrix.feature }}
+        name: vcpkg-${{ matrix.vcpkg-feature }}
         path: ./artifacts/vcpkg
     - name: Unzip Port Packages
-      run: 7z x './artifacts/vcpkg/vcpkg-${{ matrix.feature }}-*.zip' -o./artifacts/vcpkg/ -y
+      run: 7z x './artifacts/vcpkg/vcpkg-${{ matrix.vcpkg-feature }}-*.zip' -o./artifacts/vcpkg/ -y
     - name: Set up DotNet
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: '6.0.x'
-    - name: Set up NuGet Sources
-      run: >
-        ./build.sh
-        --target setup-nuget-sources
-        --azure-username GitHub
-        --azure-password ${{ secrets.AZURE_DEVOPS_PAT }}
-        --azure-apikey AzureDevOps
-        --github-apikey ${{ secrets.GITHUB_TOKEN }}
-        --configfile ./NuGet.config
     - name: Build NuGet Packages.
       run: >
         ./build.sh --target pack
-        --feature ${{ matrix.feature }}
-        --triplet x64-linux-dynamic-release
-        --triplet x64-windows-release
-        --triplet x86-windows-release
-        --license ${{ matrix.license }}
+        --vcpkg-feature ${{ matrix.vcpkg-feature }}
+        --vcpkg-triplet x64-linux-dynamic-release
+        --vcpkg-triplet x64-windows-release
+        --vcpkg-triplet x86-windows-release
+        --nuget-license ${{ matrix.nuget-license }}
       shell: bash
     - name: Upload NuGet Packages
       uses: actions/upload-artifact@v3
@@ -125,8 +116,8 @@ jobs:
         name: nuget
         path: ./artifacts/nuget/installed/**/*
         if-no-files-found: error
-  publish:
-    name: Publish
+  publish-on-azure:
+    name: Publish on Azure
     runs-on: ubuntu-latest
     needs: [ pack ]
     steps:
@@ -144,19 +135,45 @@ jobs:
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: '6.0.x'
-    - name: Set up NuGet Sources
+    - name: Set up NuGet Sources 'azure'
       run: >
         ./build.sh
-        --target setup-nuget-sources
-        --azure-username GitHub
-        --azure-password ${{ secrets.AZURE_DEVOPS_PAT }}
-        --azure-apikey AzureDevOps
-        --github-apikey ${{ secrets.GITHUB_TOKEN }}
-        --configfile ./NuGet.config
+        --target setup-nuget-source
+        --nuget-source azure
+        --nuget-username GitHub
+        --nuget-password ${{ secrets.AZURE_DEVOPS_PAT }}
+        --nuget-apikey AzureDevOps
+        --nuget-configFile ./NuGet.config
     - name: Push NuGet packages
       run: >
         ./build.sh
         --target publish
-        --azure-apikey AzureDevOps
-        --github-apikey ${{ secrets.GITHUB_TOKEN }}
+        --nuget-source azure
+        --nuget-apikey AzureDevOps
+      shell: bash
+  publish-on-github:
+    name: Publish on GitHub
+    runs-on: ubuntu-latest
+    needs: [ pack ]
+    steps:
+    - name: Checkout Git Repository
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+        submodules: true
+    - name: Download NuGet Packages
+      uses: actions/download-artifact@v3
+      with:
+        name: nuget
+        path: ./artifacts/nuget/installed
+    - name: Set up DotNet
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '6.0.x'
+    - name: Push NuGet packages
+      run: >
+        ./build.sh
+        --target publish
+        --nuget-source github
+        --nuget-apikey ${{ secrets.GITHUB_TOKEN }}
       shell: bash
