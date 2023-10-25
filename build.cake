@@ -60,7 +60,7 @@ var nugetSources = new NuGetSourceInfo[]
     new NuGetSourceInfo
     {
         Name = "azure-vcpkg-binary-cache",
-        Source = "https://pkgs.dev.azure.com/ronaldvanmanen/_packaging/vcpkg/nuget/v3/index.json",
+        Source = "https://pkgs.dev.azure.com/ronaldvanmanen/_packaging/vcpkg-binary-cache/nuget/v3/index.json",
         UserName = "azure-username",
         Password = "azure-password",
         ApiKey = "azure-apikey",
