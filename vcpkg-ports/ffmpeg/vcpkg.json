@@ -151,17 +151,9 @@
           "name": "ffmpeg",
           "default-features": false,
           "features": [
-            "tensorflow"
-          ],
-          "platform": "x64 & !static & !uwp"
-        },
-        {
-          "name": "ffmpeg",
-          "default-features": false,
-          "features": [
             "aom"
           ],
-          "platform": "!(windows & arm & !uwp)"
+          "platform": "!(windows & arm & !uwp) & !(windows & x86)"
         },
         {
           "name": "ffmpeg",

@@ -2,20 +2,54 @@
     "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
     "name": "ffmpeg-packaging",
     "version": "4.4.4",
-    "dependencies": [
+    "default-features": [
         {
-            "name": "ffmpeg",
-            "default-features": false,
-            "features": [
-                "avcodec",
-                "avdevice",
-                "avfilter",
-                "avformat",
-                "swresample",
-                "swscale"
-            ]
+            "name": "no-deps"
         }
     ],
+    "features": {
+        "no-deps": {
+            "description": "Build FFmpeg with no dependencies.",
+            "dependencies": [
+                {
+                    "name": "ffmpeg",
+                    "default-features": false,
+                    "features": [
+                        "avcodec",
+                        "avdevice",
+                        "avfilter",
+                        "avformat",
+                        "swresample",
+                        "swscale"
+                    ]
+                }
+            ]
+        },
+        "all-lgpl": {
+            "description": "Build with all allowed dependencies selected that are compatible with the LGPL license",
+            "dependencies": [
+                {
+                    "name": "ffmpeg",
+                    "default-features": false,
+                    "features": [
+                        "all"
+                    ]
+                }
+            ]
+        },
+        "all-gpl": {
+            "description": "Build with all allowed dependencies selected that are compatible with the GPL license",
+            "dependencies": [
+                {
+                    "name": "ffmpeg",
+                    "default-features": false,
+                    "features": [
+                        "all-gpl"
+                    ]
+                }
+            ]
+        }
+    },
     "overrides": [
         { "name": "ffmpeg", "version": "4.4.4" }
     ],
@@ -27,5 +61,5 @@
             "./vcpkg-triplets"
         ]
     },
-    "builtin-baseline": "60df970bbe42bfc03a481113a250f0a1c7546676"
+    "builtin-baseline": "0b9830a287d7be76d085bc6ca984c935bdf9db96"
 }

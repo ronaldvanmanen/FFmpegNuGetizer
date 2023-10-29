@@ -12,155 +12,168 @@ on:
       - 'main'
 
 jobs:
-  build-linux:
-    name: ${{ matrix.platform.name }}
-    runs-on: ${{ matrix.platform.os }}
+  build:
+    name: Build (${{ matrix.vcpkg-feature }}, ${{ matrix.vcpkg-triplet }})
+    runs-on: ${{ matrix.os }}-latest
     strategy:
+      fail-fast: false
       matrix:
-        platform:
-          - { name: Build Runtime Package (linux-x64), os: ubuntu-latest, runtime: linux-x64 }
+        vcpkg-feature: [ no-deps, all-lgpl, all-gpl ]
+        vcpkg-triplet: [ x64-linux-dynamic-release, x64-windows-release, x86-windows-release ]
+        include:
+          - os: ubuntu
+            build: ./build.sh
+            vcpkg-triplet: x64-linux-dynamic-release
+          - os: windows
+            build: .\build.cmd
+            vcpkg-triplet: x64-windows-release
+          - os: windows
+            build: .\build.cmd
+            vcpkg-triplet: x86-windows-release
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout Git Repository
+      uses: actions/checkout@v3
       with:
         fetch-depth: 0
         submodules: true
-    - uses: actions/setup-dotnet@v3
+    - name: Set up DotNet
+      uses: actions/setup-dotnet@v3
       with:
         dotnet-version: '6.0.x'
-        source-url: https://pkgs.dev.azure.com/ronaldvanmanen/_packaging/ronaldvanmanen/nuget/v3/index.json
-      env:
-        NUGET_AUTH_TOKEN: ${{ secrets.AZURE_DEVOPS_PAT }}
-    - uses: nuget/setup-nuget@v1
+    - name: Set up Vcpkg
+      run: >
+        ${{ matrix.build }}
+        --target setup-vcpkg
+    - name: Set up NuGet Source 'azure-vcpkg-binary-cache'
+      run: >
+        ${{ matrix.build }}
+        --target setup-nuget-source
+        --nuget-source azure-vcpkg-binary-cache
+        --nuget-username GitHub
+        --nuget-password ${{ secrets.AZURE_DEVOPS_PAT }}
+        --apikey AzureDevOps
+        --nuget-configFile ./NuGet.config
+    - name: Set up Build Dependencies
+      run: >
+        ${{ matrix.build }}
+        --target setup-build-dependencies
+    - name: Build and Install Port Packages
+      run: ${{ matrix.build }} --target build --vcpkg-feature ${{ matrix.vcpkg-feature }} --vcpkg-triplet ${{ matrix.vcpkg-triplet }} --vcpkg-binarysource 'clear;nuget,azure-vcpkg-binary-cache,readwrite'
+    - name: Zip Port Packages
+      run: 7z a ./artifacts/vcpkg/vcpkg-${{ matrix.vcpkg-feature }}-${{ matrix.vcpkg-triplet }}.zip ./artifacts/vcpkg/* -sdel
+      if: success() || failure()
+    - name: Upload Port Packages
+      uses: actions/upload-artifact@v3
+      if: success() || failure()
       with:
-        nuget-version: '6.x'
-    - run: sudo apt-get update
-      shell: bash
-    - run: sudo apt-get install nasm
-      shell: bash
-    - run: >
-        dotnet nuget update source azure
-        --username GitHub
-        --password ${{ secrets.AZURE_DEVOPS_PAT }}
-        --store-password-in-clear-text
-      shell: bash
-    - run: dotnet tool restore
-      shell: bash
-    - run: ./scripts/build-runtime.sh --runtime ${{ matrix.platform.runtime }}
-      shell: bash
-    - uses: actions/upload-artifact@v3
-      with:
-        name: artifacts
-        path: |
-          ./artifacts/nuget/installed/**/*
-          ./artifacts/vcpkg/installed/**/*
+        name: vcpkg-${{ matrix.vcpkg-feature }}
+        path: ./artifacts/vcpkg/vcpkg-${{ matrix.vcpkg-feature }}-${{ matrix.vcpkg-triplet }}.zip
         if-no-files-found: error
-  build-windows:
-    name: ${{ matrix.platform.name }}
-    runs-on: ${{ matrix.platform.os }}
+  pack:
+    name: Pack (${{ matrix.vcpkg-feature }})
+    runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        platform:
-        - { name: Build Runtime Package (win-x64), os: windows-latest, runtime: win-x64 }
-        - { name: Build Runtime Package (win-x86), os: windows-latest, runtime: win-x86 }
+        vcpkg-feature: [ no-deps, all-lgpl, all-gpl ]
+        include:
+          - nuget-license: LGPL-2.1-or-later
+            vcpkg-feature: no-deps
+          - nuget-license: LGPL-2.1-or-later
+            vcpkg-feature: all-lgpl
+          - nuget-license: GPL-2.0-or-later
+            vcpkg-feature: all-gpl
+    needs: [ build ]
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout Git Repository
+      uses: actions/checkout@v3
       with:
         fetch-depth: 0
         submodules: true
-    - uses: actions/setup-dotnet@v3
+    - name: Download Port Packages
+      uses: actions/download-artifact@v3
+      with:
+        name: vcpkg-${{ matrix.vcpkg-feature }}
+        path: ./artifacts/vcpkg
+    - name: Unzip Port Packages
+      run: 7z x './artifacts/vcpkg/vcpkg-${{ matrix.vcpkg-feature }}-*.zip' -o./artifacts/vcpkg/ -y
+    - name: Set up DotNet
+      uses: actions/setup-dotnet@v3
       with:
         dotnet-version: '6.0.x'
-        source-url: https://pkgs.dev.azure.com/ronaldvanmanen/_packaging/ronaldvanmanen/nuget/v3/index.json
-      env:
-        NUGET_AUTH_TOKEN: ${{ secrets.AZURE_DEVOPS_PAT }}
-    - run: >
-        dotnet nuget update source azure
-        --username GitHub
-        --password ${{ secrets.AZURE_DEVOPS_PAT }}
-        --store-password-in-clear-text
-      shell: cmd
-    - run: dotnet tool restore
-      shell: cmd
-    - run: .\scripts\build-runtime.cmd -runtime ${{ matrix.platform.runtime }}
-      shell: cmd
-    - uses: actions/upload-artifact@v3
-      with:
-        name: artifacts
-        path: |
-          .\artifacts\nuget\installed\**\*
-          .\artifacts\vcpkg\installed\**\*
-        if-no-files-found: error
-  build-multiplatform:
-    name: Build Multiplatform Package
-    runs-on: windows-latest
-    needs: [ build-linux, build-windows ]
-    steps:
-    - uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
-        submodules: true
-    - uses: actions/download-artifact@v3
-      with:
-        name: artifacts
-        path: ./artifacts
-    - uses: nuget/setup-nuget@v1
-      with:
-        nuget-version: '6.x'
-    - run: >
-        dotnet nuget update source azure
-        --username GitHub
-        --password ${{ secrets.AZURE_DEVOPS_PAT }}
-        --store-password-in-clear-text
-      shell: cmd
-    - run: dotnet tool restore
-      shell: cmd
-    - run: .\scripts\build-multiplatform.cmd
-      shell: cmd
-    - uses: actions/upload-artifact@v3
-      with:
-        name: artifacts
-        path: .\artifacts\nuget\installed\**\*
-        if-no-files-found: error
-  publish-artifacts-on-azure:
-    name: Publish Artifacts on Azure
-    runs-on: ubuntu-latest
-    needs: [ build-multiplatform ]
-    steps:
-    - uses: actions/download-artifact@v3
-      with:
-        name: artifacts
-        path: ./artifacts
-    - uses: actions/setup-dotnet@v3
-      with:
-        dotnet-version: '6.0.x'
-        source-url: https://pkgs.dev.azure.com/ronaldvanmanen/_packaging/ronaldvanmanen/nuget/v3/index.json
-      env:
-        NUGET_AUTH_TOKEN: ${{ secrets.AZURE_DEVOPS_PAT }}
-    - run: >
-        dotnet nuget push "./artifacts/**/*.nupkg"
-        --api-key AzureDevOps
-        --skip-duplicate
+    - name: Build NuGet Packages.
+      run: >
+        ./build.sh --target pack
+        --vcpkg-feature ${{ matrix.vcpkg-feature }}
+        --vcpkg-triplet x64-linux-dynamic-release
+        --vcpkg-triplet x64-windows-release
+        --vcpkg-triplet x86-windows-release
+        --nuget-license ${{ matrix.nuget-license }}
       shell: bash
-  publish-artifacts-on-github:
-    name: Publish Artifacts on GitHub
-    runs-on: ubuntu-latest
-    permissions:
-      packages: write
-    needs: [ build-multiplatform ]
-    steps:
-    - uses: actions/download-artifact@v3
+    - name: Upload NuGet Packages
+      uses: actions/upload-artifact@v3
       with:
-        name: artifacts
-        path: ./artifacts
-    - uses: actions/setup-dotnet@v3
+        name: nuget
+        path: ./artifacts/nuget/installed/**/*
+        if-no-files-found: error
+  publish-on-azure:
+    name: Publish on Azure
+    runs-on: ubuntu-latest
+    needs: [ pack ]
+    steps:
+    - name: Checkout Git Repository
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+        submodules: true
+    - name: Download NuGet Packages
+      uses: actions/download-artifact@v3
+      with:
+        name: nuget
+        path: ./artifacts/nuget/installed
+    - name: Set up DotNet
+      uses: actions/setup-dotnet@v3
       with:
         dotnet-version: '6.0.x'
-        source-url: https://nuget.pkg.github.com/ronaldvanmanen/index.json
-      env:
-        NUGET_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    - run: >
-        dotnet nuget push "./artifacts/**/*.nupkg"
-        --source "https://nuget.pkg.github.com/ronaldvanmanen/index.json"
-        --api-key ${{ secrets.GITHUB_TOKEN }}
-        --skip-duplicate
+    - name: Set up NuGet Sources 'azure'
+      run: >
+        ./build.sh
+        --target setup-nuget-source
+        --nuget-source azure
+        --nuget-username GitHub
+        --nuget-password ${{ secrets.AZURE_DEVOPS_PAT }}
+        --nuget-apikey AzureDevOps
+        --nuget-configFile ./NuGet.config
+    - name: Push NuGet packages
+      run: >
+        ./build.sh
+        --target publish
+        --nuget-source azure
+        --nuget-apikey AzureDevOps
+      shell: bash
+  publish-on-github:
+    name: Publish on GitHub
+    runs-on: ubuntu-latest
+    needs: [ pack ]
+    steps:
+    - name: Checkout Git Repository
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+        submodules: true
+    - name: Download NuGet Packages
+      uses: actions/download-artifact@v3
+      with:
+        name: nuget
+        path: ./artifacts/nuget/installed
+    - name: Set up DotNet
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '6.0.x'
+    - name: Push NuGet packages
+      run: >
+        ./build.sh
+        --target publish
+        --nuget-source github
+        --nuget-apikey ${{ secrets.GITHUB_TOKEN }}
       shell: bash
