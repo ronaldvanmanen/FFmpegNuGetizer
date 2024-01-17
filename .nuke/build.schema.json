@@ -65,6 +65,7 @@
             "type": "string",
             "enum": [
               "BuildPortPackage",
+              "BuildRuntimePackage",
               "Clean",
               "SetupVcpkg"
             ]
@@ -77,6 +78,7 @@
             "type": "string",
             "enum": [
               "BuildPortPackage",
+              "BuildRuntimePackage",
               "Clean",
               "SetupVcpkg"
             ]
