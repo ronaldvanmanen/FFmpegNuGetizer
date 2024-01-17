@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Xml.Linq;
 using JetBrains.Annotations;
 using Nuke.Common;
@@ -9,6 +10,7 @@ using Nuke.Common.Tooling;
 using Nuke.Common.Tools.GitVersion;
 using Nuke.Common.Tools.NuGet;
 using Nuke.Common.Utilities;
+using static System.Runtime.InteropServices.RuntimeInformation;
 using static Nuke.Common.IO.FileSystemTasks;
 using static Nuke.Common.Tools.NuGet.NuGetTasks;
 
@@ -48,6 +50,14 @@ class Build : NukeBuild
             _ => throw new NotSupportedException($"The vcpkg triplet `{VcpkgTriplet} is not yet supported.")
         };
 
+    IEnumerable<string> BuildDependenciesForLinux =>
+        new []
+        {
+            "libgl-dev",
+            "libglfw3-dev",
+            "nasm"
+        };
+
     AbsolutePath ArtifactsRootDirectory => RootDirectory / "artifacts";
 
     AbsolutePath VcpkgArtifactsRootDirectory => ArtifactsRootDirectory / "vcpkg";
@@ -74,6 +84,8 @@ class Build : NukeBuild
     [LocalPath(windowsPath: "vcpkg/vcpkg.exe", unixPath: "vcpkg/vcpkg")]
     readonly Tool Vcpkg;
 
+    Tool Sudo => ToolResolver.GetPathTool("sudo");
+
     [UsedImplicitly]
     Target Clean => _ => _
         .Executes(() =>
@@ -88,8 +100,21 @@ class Build : NukeBuild
             BootstrapVcpkg("-disableMetrics");
         });
     
+    Target SetupBuildDependencies => _ => _
+        .Unlisted()
+        .Executes(() => 
+        {
+            if (IsOSPlatform(OSPlatform.Linux))
+            {
+                Sudo($"apt-get update");
+                var dependencies = string.Join(' ', BuildDependenciesForLinux);
+                Sudo($"apt-get -y install {dependencies:nq}");
+            }
+        });
+
     Target BuildPortPackage => _ => _
         .DependsOn(SetupVcpkg)
+        .DependsOn(SetupBuildDependencies)
         .Requires(() => VcpkgTriplet)
         .Requires(() => VcpkgFeature)
         .Executes(() =>

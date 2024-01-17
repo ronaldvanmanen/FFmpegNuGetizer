@@ -67,6 +67,7 @@
               "BuildPortPackage",
               "BuildRuntimePackage",
               "Clean",
+              "SetupBuildDependencies",
               "SetupVcpkg"
             ]
           }
@@ -80,6 +81,7 @@
               "BuildPortPackage",
               "BuildRuntimePackage",
               "Clean",
+              "SetupBuildDependencies",
               "SetupVcpkg"
             ]
           }
