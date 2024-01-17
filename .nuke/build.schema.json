@@ -64,6 +64,7 @@
           "items": {
             "type": "string",
             "enum": [
+              "BuildPortPackage",
               "Clean",
               "SetupVcpkg"
             ]
@@ -75,10 +76,26 @@
           "items": {
             "type": "string",
             "enum": [
+              "BuildPortPackage",
               "Clean",
               "SetupVcpkg"
             ]
           }
+        },
+        "VcpkgBinarySources": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "VcpkgDebug": {
+          "type": "boolean"
+        },
+        "VcpkgFeature": {
+          "type": "string"
+        },
+        "VcpkgTriplet": {
+          "type": "string"
         },
         "Verbosity": {
           "type": "string",
