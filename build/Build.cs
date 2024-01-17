@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using JetBrains.Annotations;
 using Nuke.Common;
 using Nuke.Common.CI;
 using Nuke.Common.Execution;
@@ -17,9 +18,20 @@ class Build : NukeBuild
 
     AbsolutePath ArtifactsRootDirectory => RootDirectory / "artifacts";
 
+    [LocalPath(windowsPath: "vcpkg/bootstrap-vcpkg.bat", unixPath: "vcpkg/bootstrap.sh")]
+    readonly Tool BootstrapVcpkg;
+
     Target Clean => _ => _
         .Executes(() =>
         {
             ArtifactsRootDirectory.CreateOrCleanDirectory();
         });
+
+    [UsedImplicitly]
+    Target SetupVcpkg => _ => _
+        .Executes(() =>
+        {
+            BootstrapVcpkg("-disableMetrics");
+        });
+    
 }
