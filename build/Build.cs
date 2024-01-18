@@ -13,6 +13,7 @@ using Nuke.Common.Tooling;
 using Nuke.Common.Tools.GitVersion;
 using Nuke.Common.Tools.NuGet;
 using Nuke.Common.Utilities;
+using Nuke.Common.Utilities.Collections;
 using static System.Runtime.InteropServices.RuntimeInformation;
 using static Nuke.Common.IO.FileSystemTasks;
 using static Nuke.Common.Tools.NuGet.NuGetTasks;
@@ -31,8 +32,8 @@ class Build : NukeBuild
 
     public static int Main () => Execute<Build>(x => x.BuildMultiplatformPackage);
 
-    [Parameter()]
-    readonly string VcpkgTriplet;
+    [Parameter(Separator = ",")]
+    readonly string[] VcpkgTriplets;
 
     [Parameter()]
     readonly string VcpkgFeature;
@@ -46,15 +47,6 @@ class Build : NukeBuild
     [GitVersion]
     readonly GitVersion GitVersion;
 
-    string DotNetRuntimeIdentifier =>
-        VcpkgTriplet switch
-        {
-            "x64-linux-dynamic-release" => "linux-x64",
-            "x64-windows-release" => "win-x64",
-            "x86-windows-release" => "win-x86",
-            _ => throw new NotSupportedException($"The vcpkg triplet `{VcpkgTriplet} is not yet supported.")
-        };
-
     IEnumerable<string> BuildDependenciesForLinux =>
         new []
         {
@@ -67,21 +59,29 @@ class Build : NukeBuild
 
     AbsolutePath VcpkgArtifactsRootDirectory => ArtifactsRootDirectory / "vcpkg";
 
-    AbsolutePath VcpkgBuildtreesRootDirectory => VcpkgArtifactsRootDirectory / VcpkgFeature / VcpkgTriplet / "buildtrees";
-
-    AbsolutePath VcpkgDownloadsRootDirectory => VcpkgArtifactsRootDirectory / VcpkgFeature / VcpkgTriplet / "downloads";
-
-    AbsolutePath VcpkgInstallRootDirectory => VcpkgArtifactsRootDirectory / VcpkgFeature / VcpkgTriplet / "installed";
-
-    AbsolutePath VcpkgInstallDirectory => VcpkgInstallRootDirectory / VcpkgTriplet;
-
-    AbsolutePath VcpkgPackagesRootDirectory => VcpkgArtifactsRootDirectory / VcpkgFeature / VcpkgTriplet / "packages";
-
     AbsolutePath NugetArtifactsRootDirectory => ArtifactsRootDirectory / "nuget";
 
     AbsolutePath NugetBuildRootDirectory => NugetArtifactsRootDirectory / "build";
 
     AbsolutePath NugetInstallRootDirectory => NugetArtifactsRootDirectory / "installed";
+
+    AbsolutePath VcpkgArtifactsDirectory(string vcpkgTriplet) =>
+        VcpkgArtifactsRootDirectory / VcpkgFeature / vcpkgTriplet;
+
+    AbsolutePath VcpkgBuildtreesRootDirectory(string vcpkgTriplet) =>
+        VcpkgArtifactsDirectory(vcpkgTriplet) / "buildtrees";
+
+    AbsolutePath VcpkgDownloadsRootDirectory(string vcpkgTriplet) =>
+        VcpkgArtifactsDirectory(vcpkgTriplet) / "downloads";
+
+    AbsolutePath VcpkgInstallRootDirectory(string vcpkgTriplet) =>
+        VcpkgArtifactsDirectory(vcpkgTriplet) / "installed";
+
+    AbsolutePath VcpkgInstallDirectory(string vcpkgTriplet) =>
+        VcpkgInstallRootDirectory(vcpkgTriplet) / vcpkgTriplet;
+
+    AbsolutePath VcpkgPackagesRootDirectory(string vcpkgTriplet) =>
+        VcpkgArtifactsDirectory(vcpkgTriplet) / "packages";
 
     [LocalPath(windowsPath: "vcpkg/bootstrap-vcpkg.bat", unixPath: "vcpkg/bootstrap.sh")]
     readonly Tool BootstrapVcpkg;
@@ -90,6 +90,16 @@ class Build : NukeBuild
     readonly Tool Vcpkg;
 
     Tool Sudo => ToolResolver.GetPathTool("sudo");
+
+    string GetDotNetRuntimeIdentifier(string vcpkgTriplet) =>
+        vcpkgTriplet switch
+        {
+            "x64-linux-dynamic-release" => "linux-x64",
+            "x64-windows-release" => "win-x64",
+            "x86-windows-release" => "win-x86",
+            _ => throw new NotSupportedException($"The vcpkg triplet `{vcpkgTriplet} is not yet supported.")
+        };
+
 
     [UsedImplicitly]
     Target Clean => _ => _
@@ -121,23 +131,28 @@ class Build : NukeBuild
         .After(Clean)
         .DependsOn(SetupVcpkg)
         .DependsOn(SetupBuildDependencies)
-        .Requires(() => VcpkgTriplet)
         .Requires(() => VcpkgFeature)
-        .Executes(() =>
+        .Requires(() => VcpkgTriplets)
+        .Executes(() => VcpkgTriplets.ForEach(vcpkgTriplet =>
         {
-            VcpkgBuildtreesRootDirectory.CreateDirectory();
-            VcpkgDownloadsRootDirectory.CreateDirectory();
-            VcpkgInstallRootDirectory.CreateDirectory();
-            VcpkgPackagesRootDirectory.CreateDirectory();
+            var vcpkgBuildtreesRootDirectory = VcpkgBuildtreesRootDirectory(vcpkgTriplet);
+            var vcpkgDownloadsRootDirectory = VcpkgDownloadsRootDirectory(vcpkgTriplet);
+            var vcpkgInstallRootDirectory = VcpkgInstallRootDirectory(vcpkgTriplet);
+            var vcpkgPackagesRootDirectory = VcpkgPackagesRootDirectory(vcpkgTriplet);
+
+            vcpkgBuildtreesRootDirectory.CreateDirectory();
+            vcpkgDownloadsRootDirectory.CreateDirectory();
+            vcpkgInstallRootDirectory.CreateDirectory();
+            vcpkgPackagesRootDirectory.CreateDirectory();
 
             var argumentList = new List<string>
             {
                 $"install",
-                $"--triplet={VcpkgTriplet}",
-                $"--downloads-root={VcpkgDownloadsRootDirectory}",
-                $"--x-buildtrees-root={VcpkgBuildtreesRootDirectory}",
-                $"--x-install-root={VcpkgInstallRootDirectory}",
-                $"--x-packages-root={VcpkgPackagesRootDirectory}",
+                $"--triplet={vcpkgTriplet}",
+                $"--downloads-root={vcpkgDownloadsRootDirectory}",
+                $"--x-buildtrees-root={vcpkgBuildtreesRootDirectory}",
+                $"--x-install-root={vcpkgInstallRootDirectory}",
+                $"--x-packages-root={vcpkgPackagesRootDirectory}",
                 $"--x-no-default-features",
                 $"--x-feature={VcpkgFeature}",
                 $"--clean-after-build",
@@ -161,15 +176,16 @@ class Build : NukeBuild
             arguments.AppendLiteral(argumentString);
 
             Vcpkg(arguments);
-        });
+        }));
 
     Target BuildRuntimePackage => _ => _
         .DependsOn(BuildPortPackage)
-        .Requires(() => VcpkgTriplet)
         .Requires(() => VcpkgFeature)
-        .Executes(() =>
+        .Requires(() => VcpkgTriplets)
+        .Executes(() => VcpkgTriplets.ForEach(vcpkgTriplet =>
         {
-            var packageID = $"{ProjectName}.runtime.{DotNetRuntimeIdentifier}";
+            var dotnetRuntimeIdentifier = GetDotNetRuntimeIdentifier(vcpkgTriplet);
+            var packageID = $"{ProjectName}.runtime.{dotnetRuntimeIdentifier}";
             var packageBuildDirectory = NugetBuildRootDirectory / $"{packageID}.nupkg";
             var packageSpecFile = packageBuildDirectory / $"{packageID}.nuspec";
 
@@ -187,7 +203,7 @@ class Build : NukeBuild
                             new XElement("requireLicenseAcceptance", true),
                             new XElement("license", new XAttribute("type", "expression"), ProjectLicense),
                             new XElement("projectUrl", ProjectUrl),
-                            new XElement("description", $"{DotNetRuntimeIdentifier} runtime library for {ProjectName}."),
+                            new XElement("description", $"{dotnetRuntimeIdentifier} runtime library for {ProjectName}."),
                             new XElement("copyright", $"Copyright © {ProjectAuthor}"),
                             new XElement("repository",
                                 new XAttribute("type", "git"),
@@ -198,9 +214,9 @@ class Build : NukeBuild
                 )
             );
 
-            var libraryTargetDirectory = packageBuildDirectory / "runtimes" / $"{DotNetRuntimeIdentifier}" / "native";
-
-            var libraryFiles = VcpkgInstallDirectory.GlobFiles("lib/*.so*", $"bin/*.dll");
+            var libraryTargetDirectory = packageBuildDirectory / "runtimes" / $"{dotnetRuntimeIdentifier}" / "native";
+            var vcpkgInstallRootDirectory = VcpkgInstallDirectory(vcpkgTriplet);
+            var libraryFiles = vcpkgInstallRootDirectory.GlobFiles("lib/*.so*", $"bin/*.dll");
             foreach (var libraryFile in libraryFiles)
             {
                 CopyFileToDirectory(libraryFile, libraryTargetDirectory);
@@ -212,10 +228,12 @@ class Build : NukeBuild
                 .SetOutputDirectory(NugetInstallRootDirectory);
 
             NuGetPack(packSettings);
-        });
+        }));
 
     Target BuildMultiplatformPackage => _ => _
         .DependsOn(BuildRuntimePackage)
+        .Requires(() => VcpkgFeature)
+        .Requires(() => VcpkgTriplets)
         .Executes(() =>
         {
             var packageID = $"{ProjectName}";
@@ -259,6 +277,13 @@ class Build : NukeBuild
                     )
                 )
             );
+
+            var includeTargetDirectory = packageBuildDirectory / "lib" / "native" / "include";
+            var includeDirectories = VcpkgTriplets.Select(vcpkgTriplet => VcpkgInstallDirectory(vcpkgTriplet) / "include");
+            foreach (var includeDirectory in includeDirectories)
+            {
+                CopyDirectoryRecursively(includeDirectory, includeTargetDirectory, DirectoryExistsPolicy.Merge, FileExistsPolicy.Skip);
+            }
 
             var runtimePackagePattern = $"{ProjectName}.runtime.*.{packageVersion}.nupkg";
             var runtimePackages = NugetInstallRootDirectory.GlobFiles(runtimePackagePattern);

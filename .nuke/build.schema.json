@@ -100,8 +100,11 @@
         "VcpkgFeature": {
           "type": "string"
         },
-        "VcpkgTriplet": {
-          "type": "string"
+        "VcpkgTriplets": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         },
         "Verbosity": {
           "type": "string",
