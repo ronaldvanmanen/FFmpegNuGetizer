@@ -2,8 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using JetBrains.Annotations;
+using NuGet.RuntimeModel;
+using NuGet.Versioning;
 using Nuke.Common;
 using Nuke.Common.IO;
 using Nuke.Common.Tooling;
@@ -22,9 +25,11 @@ class Build : NukeBuild
 
     const string ProjectUrl = "https://github.com/ronaldvanmanen/FFmpeg-packaging";
 
+    const string ProjectLicense = "LGPL-2.1-or-later";
+
     const string RepositoryUrl = "https://github.com/ronaldvanmanen/FFmpeg-packaging";
 
-    public static int Main () => Execute<Build>(x => x.BuildRuntimePackage);
+    public static int Main () => Execute<Build>(x => x.BuildMultiplatformPackage);
 
     [Parameter()]
     readonly string VcpkgTriplet;
@@ -113,6 +118,7 @@ class Build : NukeBuild
         });
 
     Target BuildPortPackage => _ => _
+        .After(Clean)
         .DependsOn(SetupVcpkg)
         .DependsOn(SetupBuildDependencies)
         .Requires(() => VcpkgTriplet)
@@ -157,9 +163,7 @@ class Build : NukeBuild
             Vcpkg(arguments);
         });
 
-
     Target BuildRuntimePackage => _ => _
-        .Unlisted()
         .DependsOn(BuildPortPackage)
         .Requires(() => VcpkgTriplet)
         .Requires(() => VcpkgFeature)
@@ -181,7 +185,7 @@ class Build : NukeBuild
                             new XElement("version", GitVersion.NuGetVersion),
                             new XElement("authors", ProjectAuthor),
                             new XElement("requireLicenseAcceptance", true),
-                            new XElement("license", new XAttribute("type", "expression"), "LGPL-2.1-or-later"),
+                            new XElement("license", new XAttribute("type", "expression"), ProjectLicense),
                             new XElement("projectUrl", ProjectUrl),
                             new XElement("description", $"{DotNetRuntimeIdentifier} runtime library for {ProjectName}."),
                             new XElement("copyright", $"Copyright © {ProjectAuthor}"),
@@ -206,6 +210,87 @@ class Build : NukeBuild
                 .SetProcessWorkingDirectory(packageBuildDirectory)
                 .SetTargetPath(packageSpecFile)
                 .SetOutputDirectory(NugetInstallRootDirectory);
+
+            NuGetPack(packSettings);
+        });
+
+    Target BuildMultiplatformPackage => _ => _
+        .DependsOn(BuildRuntimePackage)
+        .Executes(() =>
+        {
+            var packageID = $"{ProjectName}";
+            var packageBuildDirectory = NugetBuildRootDirectory / $"{packageID}.nupkg";
+            var packageSpecFile = packageBuildDirectory / $"{packageID}.nuspec";
+            var packageVersion = GitVersion.NuGetVersion;
+
+            var runtimeSpec = packageBuildDirectory / "runtime.json";
+            var runtimePackageVersion = VersionRange.Parse(packageVersion);
+            var placeholderFiles = new []
+            {
+                packageBuildDirectory / "lib" / "netstandard2.0" / "_._"
+            };
+
+            packageBuildDirectory.CreateOrCleanDirectory();
+
+            packageSpecFile.WriteXml(
+                new XDocument(
+                    new XDeclaration("1.0", "utf-8", null),
+                    new XElement("{http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd}package",
+                        new XElement("metadata",
+                            new XAttribute("minClientVersion", "2.12"),
+                            new XElement("id", packageID),
+                            new XElement("version", packageVersion),
+                            new XElement("authors", ProjectAuthor),
+                            new XElement("requireLicenseAcceptance", true),
+                            new XElement("license", new XAttribute("type", "expression"), ProjectLicense),
+                            new XElement("projectUrl", ProjectUrl),
+                            new XElement("description", $"Multi-platform native library for {ProjectName}."),
+                            new XElement("copyright", $"Copyright © {ProjectAuthor}"),
+                            new XElement("repository",
+                                new XAttribute("type", "git"),
+                                new XAttribute("url", RepositoryUrl)
+                            ),
+                            new XElement("dependencies",
+                                new XElement("group",
+                                    new XAttribute("targetFramework", ".NETStandard2.0")
+                                )
+                            )
+                        )
+                    )
+                )
+            );
+
+            var runtimePackagePattern = $"{ProjectName}.runtime.*.{packageVersion}.nupkg";
+            var runtimePackages = NugetInstallRootDirectory.GlobFiles(runtimePackagePattern);
+            var runtimeDescriptions = runtimePackages.Select(runtimePackage => 
+            {
+                var runtimePackagePattern = $"^(?<RuntimePackageID>{ProjectName}\\.runtime\\.(?<RuntimeID>[^.]+))\\..*$";
+                var runtimePackageMatch = Regex.Match(runtimePackage.NameWithoutExtension, runtimePackagePattern);
+                var runtimePackageID = runtimePackageMatch.Groups["RuntimePackageID"].Value;
+                var runtimeID = runtimePackageMatch.Groups["RuntimeID"].Value;
+                return new RuntimeDescription(runtimeID, new []
+                {
+                    new RuntimeDependencySet($"{ProjectName}", new []
+                    {
+                        new RuntimePackageDependency(runtimePackageID, runtimePackageVersion)
+                    })
+                });
+            });
+
+            var runtimeGraph = new RuntimeGraph(runtimeDescriptions);
+
+            runtimeSpec.WriteRuntimeGraph(runtimeGraph);
+
+            foreach (var placeholder in placeholderFiles)
+            {
+                placeholder.TouchFile();
+            }
+
+            var packSettings = new NuGetPackSettings()
+                .SetProcessWorkingDirectory(packageBuildDirectory)
+                .SetTargetPath(packageSpecFile)
+                .SetOutputDirectory(NugetInstallRootDirectory)
+                .SetNoPackageAnalysis(true);
 
             NuGetPack(packSettings);
         });
