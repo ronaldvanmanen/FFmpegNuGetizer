@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
@@ -65,23 +67,23 @@ class Build : NukeBuild
 
     AbsolutePath NugetInstallRootDirectory => NugetArtifactsRootDirectory / "installed";
 
-    AbsolutePath VcpkgArtifactsDirectory(string vcpkgTriplet) =>
-        VcpkgArtifactsRootDirectory / VcpkgFeature / vcpkgTriplet;
+    AbsolutePath VcpkgBuildRootDirectory(string vcpkgTriplet) =>
+        VcpkgArtifactsRootDirectory / VcpkgFeature / GetRuntimeID(vcpkgTriplet);
 
     AbsolutePath VcpkgBuildtreesRootDirectory(string vcpkgTriplet) =>
-        VcpkgArtifactsDirectory(vcpkgTriplet) / "buildtrees";
+        VcpkgBuildRootDirectory(vcpkgTriplet) / "buildtrees";
 
     AbsolutePath VcpkgDownloadsRootDirectory(string vcpkgTriplet) =>
-        VcpkgArtifactsDirectory(vcpkgTriplet) / "downloads";
+        VcpkgBuildRootDirectory(vcpkgTriplet) / "downloads";
 
     AbsolutePath VcpkgInstallRootDirectory(string vcpkgTriplet) =>
-        VcpkgArtifactsDirectory(vcpkgTriplet) / "installed";
+        VcpkgBuildRootDirectory(vcpkgTriplet) / "installed";
 
     AbsolutePath VcpkgInstallDirectory(string vcpkgTriplet) =>
         VcpkgInstallRootDirectory(vcpkgTriplet) / vcpkgTriplet;
 
     AbsolutePath VcpkgPackagesRootDirectory(string vcpkgTriplet) =>
-        VcpkgArtifactsDirectory(vcpkgTriplet) / "packages";
+        VcpkgBuildRootDirectory(vcpkgTriplet) / "packages";
 
     [LocalPath(windowsPath: "vcpkg/bootstrap-vcpkg.bat", unixPath: "vcpkg/bootstrap.sh")]
     readonly Tool BootstrapVcpkg;
@@ -180,9 +182,41 @@ class Build : NukeBuild
             Vcpkg(arguments);
         }));
 
-    Target BuildRuntimePackage => _ => _
+    Target ZipPortPackage => _ => _
         .After(Clean)
         .DependsOn(BuildPortPackage)
+        .Requires(() => VcpkgFeature)
+        .Requires(() => VcpkgTriplets)
+        .Executes(() => VcpkgTriplets.ForEach(vcpkgTriplet =>
+        {
+            var vcpkgBuildArchive = VcpkgArtifactsRootDirectory / $"vcpkg-{VcpkgFeature}-{vcpkgTriplet}.zip";
+            var vcpkgBuildDirectory = VcpkgBuildRootDirectory(vcpkgTriplet);
+
+            VcpkgArtifactsRootDirectory.ZipTo(
+                vcpkgBuildArchive,
+                filter: filePath => vcpkgBuildDirectory.Contains(filePath),
+                compressionLevel: CompressionLevel.NoCompression,
+                fileMode: FileMode.Create);
+
+            vcpkgBuildDirectory.DeleteDirectory();
+        }));
+
+    Target UnzipPortPackage => _ => _
+        .After(Clean)
+        .DependsOn(ZipPortPackage)
+        .Requires(() => VcpkgFeature)
+        .Requires(() => VcpkgTriplets)
+        .Executes(() => VcpkgTriplets.ForEach(vcpkgTriplet =>
+        {
+            var vcpkgBuildDirectory = VcpkgBuildRootDirectory(vcpkgTriplet);
+            var vcpkgBuildArchive = VcpkgArtifactsRootDirectory / $"vcpkg-{VcpkgFeature}-{vcpkgTriplet}.zip";
+            vcpkgBuildArchive.UnZipTo(VcpkgArtifactsRootDirectory);
+            vcpkgBuildArchive.DeleteFile();
+        }));
+
+    Target BuildRuntimePackage => _ => _
+        .After(Clean)
+        .DependsOn(UnzipPortPackage)
         .Requires(() => VcpkgFeature)
         .Requires(() => VcpkgTriplets)
         .Executes(() => VcpkgTriplets.ForEach(vcpkgTriplet =>

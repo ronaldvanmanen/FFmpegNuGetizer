@@ -69,7 +69,9 @@
               "BuildRuntimePackage",
               "Clean",
               "SetupBuildDependencies",
-              "SetupVcpkg"
+              "SetupVcpkg",
+              "UnzipPortPackage",
+              "ZipPortPackage"
             ]
           }
         },
@@ -84,7 +86,9 @@
               "BuildRuntimePackage",
               "Clean",
               "SetupBuildDependencies",
-              "SetupVcpkg"
+              "SetupVcpkg",
+              "UnzipPortPackage",
+              "ZipPortPackage"
             ]
           }
         },

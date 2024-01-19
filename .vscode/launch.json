@@ -9,6 +9,23 @@
             "type": "coreclr",
             "request": "attach",
             "processId": "${command:pickProcess}"
+        },
+        {
+            "name": "Launch Nuke Build",
+            "type": "coreclr",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/bin/Debug/Build",
+            "args": [
+                "--target",
+                "BuildMultiplatformPackage",
+                "--vcpkg-feature",
+                "no-deps",
+                "--vcpkg-triplets",
+                "x64-windows-release,x86-windows-release"
+            ],
+            "cwd": "${workspaceFolder}/build/bin/Debug",
+            "stopAtEntry": false,
+            "console": "integratedTerminal"
         }
     ]
 }
