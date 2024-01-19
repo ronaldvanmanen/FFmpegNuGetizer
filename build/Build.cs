@@ -91,7 +91,7 @@ class Build : NukeBuild
 
     Tool Sudo => ToolResolver.GetPathTool("sudo");
 
-    string GetDotNetRuntimeIdentifier(string vcpkgTriplet) =>
+    string GetRuntimeID(string vcpkgTriplet) =>
         vcpkgTriplet switch
         {
             "x64-linux-dynamic-release" => "linux-x64",
@@ -100,6 +100,8 @@ class Build : NukeBuild
             _ => throw new NotSupportedException($"The vcpkg triplet `{vcpkgTriplet} is not yet supported.")
         };
 
+    string GetRuntimePackageID(string vcpkgTriplet) =>
+        $"{ProjectName}.runtime.{GetRuntimeID(vcpkgTriplet)}";
 
     [UsedImplicitly]
     Target Clean => _ => _
@@ -179,13 +181,14 @@ class Build : NukeBuild
         }));
 
     Target BuildRuntimePackage => _ => _
+        .After(Clean)
         .DependsOn(BuildPortPackage)
         .Requires(() => VcpkgFeature)
         .Requires(() => VcpkgTriplets)
         .Executes(() => VcpkgTriplets.ForEach(vcpkgTriplet =>
         {
-            var dotnetRuntimeIdentifier = GetDotNetRuntimeIdentifier(vcpkgTriplet);
-            var packageID = $"{ProjectName}.runtime.{dotnetRuntimeIdentifier}";
+            var dotnetRuntimeIdentifier = GetRuntimeID(vcpkgTriplet);
+            var packageID = GetRuntimePackageID(vcpkgTriplet);
             var packageBuildDirectory = NugetBuildRootDirectory / $"{packageID}.nupkg";
             var packageSpecFile = packageBuildDirectory / $"{packageID}.nuspec";
 
@@ -231,6 +234,7 @@ class Build : NukeBuild
         }));
 
     Target BuildMultiplatformPackage => _ => _
+        .After(Clean)
         .DependsOn(BuildRuntimePackage)
         .Requires(() => VcpkgFeature)
         .Requires(() => VcpkgTriplets)
@@ -240,7 +244,6 @@ class Build : NukeBuild
             var packageBuildDirectory = NugetBuildRootDirectory / $"{packageID}.nupkg";
             var packageSpecFile = packageBuildDirectory / $"{packageID}.nuspec";
             var packageVersion = GitVersion.NuGetVersion;
-
             var runtimeSpec = packageBuildDirectory / "runtime.json";
             var runtimePackageVersion = VersionRange.Parse(packageVersion);
             var placeholderFiles = new []
@@ -285,26 +288,20 @@ class Build : NukeBuild
                 CopyDirectoryRecursively(includeDirectory, includeTargetDirectory, DirectoryExistsPolicy.Merge, FileExistsPolicy.Skip);
             }
 
-            var runtimePackagePattern = $"{ProjectName}.runtime.*.{packageVersion}.nupkg";
-            var runtimePackages = NugetInstallRootDirectory.GlobFiles(runtimePackagePattern);
-            var runtimeDescriptions = runtimePackages.Select(runtimePackage => 
-            {
-                var runtimePackagePattern = $"^(?<RuntimePackageID>{ProjectName}\\.runtime\\.(?<RuntimeID>[^.]+))\\..*$";
-                var runtimePackageMatch = Regex.Match(runtimePackage.NameWithoutExtension, runtimePackagePattern);
-                var runtimePackageID = runtimePackageMatch.Groups["RuntimePackageID"].Value;
-                var runtimeID = runtimePackageMatch.Groups["RuntimeID"].Value;
-                return new RuntimeDescription(runtimeID, new []
-                {
-                    new RuntimeDependencySet($"{ProjectName}", new []
+            runtimeSpec.WriteRuntimeGraph(
+                new RuntimeGraph(
+                    VcpkgTriplets.Select(vcpkgTriplet =>
                     {
-                        new RuntimePackageDependency(runtimePackageID, runtimePackageVersion)
-                    })
-                });
-            });
-
-            var runtimeGraph = new RuntimeGraph(runtimeDescriptions);
-
-            runtimeSpec.WriteRuntimeGraph(runtimeGraph);
+                        var runtimeID = GetRuntimeID(vcpkgTriplet);
+                        var runtimePackageID = GetRuntimePackageID(vcpkgTriplet);
+                        return new RuntimeDescription(runtimeID, new []
+                        {
+                            new RuntimeDependencySet(packageID, new []
+                            {
+                                new RuntimePackageDependency(runtimePackageID, runtimePackageVersion)
+                            })
+                        });
+                    })));
 
             foreach (var placeholder in placeholderFiles)
             {
