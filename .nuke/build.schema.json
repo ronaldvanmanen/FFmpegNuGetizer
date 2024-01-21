@@ -94,6 +94,7 @@
         },
         "VcpkgBinarySources": {
           "type": "array",
+          "description": "Specify the source(s) to use for binary caching",
           "items": {
             "type": "string"
           }
@@ -102,10 +103,12 @@
           "type": "boolean"
         },
         "VcpkgFeature": {
-          "type": "string"
+          "type": "string",
+          "description": "Specify the feature from the vcpkg.json to install"
         },
         "VcpkgTriplets": {
           "type": "array",
+          "description": "Specify the target architecture triplet(s)",
           "items": {
             "type": "string"
           }

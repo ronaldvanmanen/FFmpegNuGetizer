@@ -34,13 +34,13 @@ class Build : NukeBuild
 
     public static int Main () => Execute<Build>(x => x.BuildMultiplatformPackage);
 
-    [Parameter(Separator = ",")]
-    readonly string[] VcpkgTriplets;
-
-    [Parameter()]
+    [Parameter("Specify the feature from the vcpkg.json to install.")]
     readonly string VcpkgFeature;
 
-    [Parameter()]
+    [Parameter("Specify the target architecture triplet(s).", Separator = ",")]
+    readonly string[] VcpkgTriplets;
+
+    [Parameter("Specify the source(s) to use for binary caching.", Separator = ";")]
     readonly string[] VcpkgBinarySources = Array.Empty<string>();
 
     [Parameter()]
