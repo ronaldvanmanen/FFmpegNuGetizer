@@ -4,12 +4,12 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using JetBrains.Annotations;
 using NuGet.RuntimeModel;
 using NuGet.Versioning;
 using Nuke.Common;
+using Nuke.Common.Execution;
 using Nuke.Common.IO;
 using Nuke.Common.Tooling;
 using Nuke.Common.Tools.GitVersion;
@@ -42,9 +42,6 @@ class Build : NukeBuild
 
     [Parameter("Specify the source(s) to use for binary caching.", Separator = ";")]
     readonly string[] VcpkgBinarySources = Array.Empty<string>();
-
-    [Parameter()]
-    readonly bool VcpkgDebug;
     
     [GitVersion]
     readonly GitVersion GitVersion;
@@ -167,7 +164,7 @@ class Build : NukeBuild
                 VcpkgBinarySources.Select(vcpkgBinarySource => $"--binarysource={vcpkgBinarySource}")
             );
 
-            if (VcpkgDebug)
+            if (Logging.Level == LogLevel.Trace)
             {
                 argumentList.Add("--debug");
             }

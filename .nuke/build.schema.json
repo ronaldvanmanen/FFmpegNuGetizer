@@ -99,9 +99,6 @@
             "type": "string"
           }
         },
-        "VcpkgDebug": {
-          "type": "boolean"
-        },
         "VcpkgFeature": {
           "type": "string",
           "description": "Specify the feature from the vcpkg.json to install"
