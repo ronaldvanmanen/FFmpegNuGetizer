@@ -6,9 +6,19 @@
     "build": {
       "type": "object",
       "properties": {
+        "AzureToken": {
+          "type": "string",
+          "description": "The Azure DevOps personal access token",
+          "default": "Secrets must be entered via 'nuke :secrets [profile]'"
+        },
         "Continue": {
           "type": "boolean",
           "description": "Indicates to continue a previously failed build attempt"
+        },
+        "GitHubToken": {
+          "type": "string",
+          "description": "The GitHub personal access token",
+          "default": "Secrets must be entered via 'nuke :secrets [profile]'"
         },
         "Help": {
           "type": "boolean",
@@ -69,6 +79,7 @@
               "BuildRuntimePackage",
               "Clean",
               "SetupBuildDependencies",
+              "SetupNuGet",
               "SetupVcpkg",
               "UnzipPortPackage",
               "ZipPortPackage"
@@ -86,6 +97,7 @@
               "BuildRuntimePackage",
               "Clean",
               "SetupBuildDependencies",
+              "SetupNuGet",
               "SetupVcpkg",
               "UnzipPortPackage",
               "ZipPortPackage"

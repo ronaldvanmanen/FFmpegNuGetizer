@@ -19,6 +19,7 @@ using Nuke.Common.Utilities.Collections;
 using static System.Runtime.InteropServices.RuntimeInformation;
 using static Nuke.Common.IO.FileSystemTasks;
 using static Nuke.Common.Tools.NuGet.NuGetTasks;
+using static NuGetTasks;
 
 class Build : NukeBuild
 {
@@ -42,17 +43,67 @@ class Build : NukeBuild
 
     [Parameter("Specify the source(s) to use for binary caching.", Separator = ";")]
     readonly string[] VcpkgBinarySources = Array.Empty<string>();
-    
+
+    [Parameter("The Azure DevOps personal access token")]
+    [Secret]
+    readonly string AzureToken;
+
+    [Parameter("The GitHub personal access token")]
+    [Secret]
+    readonly string GitHubToken;
+
     [GitVersion]
     readonly GitVersion GitVersion;
 
-    IEnumerable<string> BuildDependenciesForLinux =>
+    static readonly IEnumerable<string> BuildDependenciesForLinux =
         new []
         {
             "libgl-dev",
             "libglfw3-dev",
             "nasm"
         };
+
+    IEnumerable<NuGetFeedSettings> NuGetFeeds
+    {
+        get
+        {
+            yield return new NuGetFeedSettings
+            {
+                Name = "nuget.org",
+                Source = "https://api.nuget.org/v3/index.json",
+            };
+                
+            yield return new NuGetFeedSettings
+            {
+                Name = "azure",
+                Source = "https://pkgs.dev.azure.com/ronaldvanmanen/_packaging/ronaldvanmanen/nuget/v3/index.json",
+                UserName = "GitHub",
+                Password = AzureToken,
+                StorePasswordInClearText = true,
+                ApiKey = "AzureDevOps",
+            };
+
+            yield return new NuGetFeedSettings
+            {
+                Name = "azure-vcpkg-binary-cache",
+                Source = "https://pkgs.dev.azure.com/ronaldvanmanen/_packaging/vcpkg-binary-cache/nuget/v3/index.json",
+                UserName = "GitHub",
+                Password = AzureToken,
+                StorePasswordInClearText = true,
+                ApiKey = "AzureDevOps",
+            };
+
+            yield return new NuGetFeedSettings
+            {
+                Name = "github",
+                Source = "https://nuget.pkg.github.com/ronaldvanmanen/index.json",
+                UserName = "GitHub",
+                Password = GitHubToken,
+                StorePasswordInClearText = true,
+                ApiKey = GitHubToken,
+            };
+        }
+    }
 
     AbsolutePath ArtifactsRootDirectory => RootDirectory / "artifacts";
 
@@ -63,6 +114,8 @@ class Build : NukeBuild
     AbsolutePath NugetBuildRootDirectory => NugetArtifactsRootDirectory / "build";
 
     AbsolutePath NugetInstallRootDirectory => NugetArtifactsRootDirectory / "installed";
+
+    AbsolutePath NuGetConfigFile => RootDirectory / "NuGet.config";
 
     AbsolutePath VcpkgBuildRootDirectory(string vcpkgTriplet) =>
         VcpkgArtifactsRootDirectory / VcpkgFeature / GetRuntimeID(vcpkgTriplet);
@@ -115,6 +168,54 @@ class Build : NukeBuild
         {
             BootstrapVcpkg("-disableMetrics");
         });
+
+    Target SetupNuGet => _ => _
+        .Executes(() =>
+        {
+            if (NuGetConfigFile.FileExists())
+            {
+                NuGetConfigFile.DeleteFile();
+            }
+
+            NuGetConfigFile.WriteXml(
+                new XDocument(
+                    new XDeclaration("1.0", "utf-8", null),
+                    new XElement("configuration",
+                        new XElement("packageSources",
+                            new XElement("clear")
+                        )
+                    )
+                )
+            );
+
+            foreach (var nugetFeed in NuGetFeeds)
+            {
+                var nuGetSourcesAddSettings = new NuGetSourcesAddSettings()
+                    .SetConfigFile(NuGetConfigFile)
+                    .SetName(nugetFeed.Name)
+                    .SetSource(nugetFeed.Source)
+                    .SetNonInteractive(IsServerBuild);
+
+                if (!string.IsNullOrEmpty(nugetFeed.UserName) && !string.IsNullOrEmpty(nugetFeed.Password))
+                {
+                    nuGetSourcesAddSettings.SetUserName(nugetFeed.UserName);
+                    nuGetSourcesAddSettings.SetPassword(nugetFeed.Password);
+                }
+
+                NuGetSourcesAdd(nuGetSourcesAddSettings);
+
+                if (!string.IsNullOrWhiteSpace(nugetFeed.ApiKey))
+                {
+                    NuGetSetApiKey(
+                        new NuGetSetApiKeySettings()
+                            .SetConfigFile(NuGetConfigFile)
+                            .SetSource(nugetFeed.Source)
+                            .SetApiKey(nugetFeed.ApiKey)
+                            .SetNonInteractive(IsServerBuild)
+                    );
+                }
+            }
+        });
     
     Target SetupBuildDependencies => _ => _
         .Unlisted()
@@ -131,6 +232,7 @@ class Build : NukeBuild
     Target BuildPortPackage => _ => _
         .After(Clean)
         .DependsOn(SetupVcpkg)
+        .DependsOn(SetupNuGet)
         .DependsOn(SetupBuildDependencies)
         .Requires(() => VcpkgFeature)
         .Requires(() => VcpkgTriplets)

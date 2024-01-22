@@ -17,11 +17,11 @@
             "program": "${workspaceFolder}/build/bin/Debug/Build",
             "args": [
                 "--target",
-                "BuildMultiplatformPackage",
-                "--vcpkg-feature",
-                "no-deps",
-                "--vcpkg-triplets",
-                "x64-windows-release,x86-windows-release"
+                "SetupNuGetSource",
+                "--nuget-source-name",
+                "nuget.org",
+                "--nuget-source-uri",
+                "https://api.nuget.org/v3/index.json"
             ],
             "cwd": "${workspaceFolder}/build/bin/Debug",
             "stopAtEntry": false,
