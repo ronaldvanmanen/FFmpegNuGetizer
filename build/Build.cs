@@ -81,6 +81,7 @@ class Build : NukeBuild
                 Password = AzureToken,
                 StorePasswordInClearText = true,
                 ApiKey = "AzureDevOps",
+                Publish = true
             };
 
             yield return new NuGetFeedSettings
@@ -101,6 +102,7 @@ class Build : NukeBuild
                 Password = GitHubToken,
                 StorePasswordInClearText = true,
                 ApiKey = GitHubToken,
+                Publish = true
             };
         }
     }
@@ -368,7 +370,7 @@ class Build : NukeBuild
 
     Target BuildMultiplatformPackage => _ => _
         .After(Clean)
-        .DependsOn(BuildRuntimePackage)
+        .DependsOn(BuildPortPackage)
         .Requires(() => VcpkgFeature)
         .Requires(() => VcpkgTriplets)
         .Executes(() =>
@@ -449,4 +451,26 @@ class Build : NukeBuild
 
             NuGetPack(packSettings);
         });
+
+    [UsedImplicitly]
+    Target PublishPackage => _ => _
+        .After(BuildRuntimePackage)
+        .After(BuildMultiplatformPackage)
+        .Executes(() => 
+        {
+            var packages = NugetInstallRootDirectory.GlobFiles("*.nupkg");
+            foreach (var nugetFeed in NuGetFeeds.Where(e => e.Publish))
+            {
+                foreach (var package in packages)
+                {
+                    NuGetPush(
+                        new NuGetPushSettings()
+                            .SetTargetPath(package)
+                            .SetSource(nugetFeed.Source)
+                            .SetApiKey(nugetFeed.ApiKey)
+                            .SetNonInteractive(IsServerBuild)
+                    );
+                }
+            }
+        });        
 }

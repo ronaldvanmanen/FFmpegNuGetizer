@@ -13,4 +13,6 @@ class NuGetFeedSettings
     public bool? StorePasswordInClearText { get; set; }
 
     public string ApiKey { get; set; }
+
+    public bool Publish { get; set; }
 }
