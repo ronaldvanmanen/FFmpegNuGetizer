@@ -111,11 +111,11 @@ class Build : NukeBuild
 
     AbsolutePath VcpkgArtifactsRootDirectory => ArtifactsRootDirectory / "vcpkg";
 
-    AbsolutePath NugetArtifactsRootDirectory => ArtifactsRootDirectory / "nuget";
+    AbsolutePath NuGetArtifactsRootDirectory => ArtifactsRootDirectory / "nuget";
 
-    AbsolutePath NugetBuildRootDirectory => NugetArtifactsRootDirectory / "build";
+    AbsolutePath NuGetBuildRootDirectory => NuGetArtifactsRootDirectory / "build";
 
-    AbsolutePath NugetInstallRootDirectory => NugetArtifactsRootDirectory / "installed";
+    AbsolutePath NuGetInstallRootDirectory => NuGetArtifactsRootDirectory / "installed";
 
     AbsolutePath NuGetConfigFile => RootDirectory / "NuGet.config";
 
@@ -324,7 +324,7 @@ class Build : NukeBuild
         {
             var dotnetRuntimeIdentifier = GetRuntimeID(vcpkgTriplet);
             var packageID = GetRuntimePackageID(vcpkgTriplet);
-            var packageBuildDirectory = NugetBuildRootDirectory / $"{packageID}.nupkg";
+            var packageBuildDirectory = NuGetBuildRootDirectory / $"{packageID}.nupkg";
             var packageSpecFile = packageBuildDirectory / $"{packageID}.nuspec";
 
             packageBuildDirectory.CreateOrCleanDirectory();
@@ -363,7 +363,7 @@ class Build : NukeBuild
             var packSettings = new NuGetPackSettings()
                 .SetProcessWorkingDirectory(packageBuildDirectory)
                 .SetTargetPath(packageSpecFile)
-                .SetOutputDirectory(NugetInstallRootDirectory);
+                .SetOutputDirectory(NuGetInstallRootDirectory);
 
             NuGetPack(packSettings);
         }));
@@ -376,7 +376,7 @@ class Build : NukeBuild
         .Executes(() =>
         {
             var packageID = $"{ProjectName}";
-            var packageBuildDirectory = NugetBuildRootDirectory / $"{packageID}.nupkg";
+            var packageBuildDirectory = NuGetBuildRootDirectory / $"{packageID}.nupkg";
             var packageSpecFile = packageBuildDirectory / $"{packageID}.nuspec";
             var packageVersion = GitVersion.NuGetVersion;
             var runtimeSpec = packageBuildDirectory / "runtime.json";
@@ -446,7 +446,7 @@ class Build : NukeBuild
             var packSettings = new NuGetPackSettings()
                 .SetProcessWorkingDirectory(packageBuildDirectory)
                 .SetTargetPath(packageSpecFile)
-                .SetOutputDirectory(NugetInstallRootDirectory)
+                .SetOutputDirectory(NuGetInstallRootDirectory)
                 .SetNoPackageAnalysis(true);
 
             NuGetPack(packSettings);
@@ -458,7 +458,7 @@ class Build : NukeBuild
         .After(BuildMultiplatformPackage)
         .Executes(() => 
         {
-            var packages = NugetInstallRootDirectory.GlobFiles("*.nupkg");
+            var packages = NuGetInstallRootDirectory.GlobFiles("*.nupkg");
             foreach (var nugetFeed in NuGetFeeds.Where(e => e.Publish))
             {
                 foreach (var package in packages)
