@@ -49,6 +49,29 @@
           "type": "boolean",
           "description": "Disables displaying the NUKE logo"
         },
+        "NuGetAuthors": {
+          "type": "array",
+          "description": "Specifiy the NuGet package authors",
+          "items": {
+            "type": "string"
+          }
+        },
+        "NuGetLicense": {
+          "type": "string",
+          "description": "Specify the NuGet package's license"
+        },
+        "NuGetPackageID": {
+          "type": "string",
+          "description": "Specify the NuGet package identifier"
+        },
+        "NuGetProjectUrl": {
+          "type": "string",
+          "description": "Specify the NuGet package's home page"
+        },
+        "NuGetRepositoryUrl": {
+          "type": "string",
+          "description": "Specify the NuGet package's reposity URL"
+        },
         "Partition": {
           "type": "string",
           "description": "Partition to use on CI"
@@ -113,9 +136,24 @@
             "type": "string"
           }
         },
-        "VcpkgFeature": {
+        "VcpkgDefaultFeatures": {
+          "type": "boolean",
+          "description": "Specify whether the default features of the specified package should be installed or not"
+        },
+        "VcpkgFeatures": {
+          "type": "array",
+          "description": "Specify which optional features of the specified package to install",
+          "items": {
+            "type": "string"
+          }
+        },
+        "VcpkgPackageName": {
           "type": "string",
-          "description": "Specify the feature from the vcpkg.json to install"
+          "description": "Specify which package to install"
+        },
+        "VcpkgPackageVersion": {
+          "type": "string",
+          "description": "Specify which version of the specified package to install"
         },
         "VcpkgTriplets": {
           "type": "array",

@@ -20,29 +20,44 @@ using static System.Runtime.InteropServices.RuntimeInformation;
 using static Nuke.Common.IO.FileSystemTasks;
 using static Nuke.Common.Tools.NuGet.NuGetTasks;
 using static NuGetTasks;
+using Newtonsoft.Json.Linq;
 
 class Build : NukeBuild
 {
-    const string ProjectName = "FFmpeg";
-
-    const string ProjectAuthor = "Ronald van Manen";
-
-    const string ProjectUrl = "https://github.com/ronaldvanmanen/FFmpeg-packaging";
-
-    const string ProjectLicense = "LGPL-2.1-or-later";
-
-    const string RepositoryUrl = "https://github.com/ronaldvanmanen/FFmpeg-packaging";
-
     public static int Main () => Execute<Build>(x => x.BuildMultiplatformPackage);
 
-    [Parameter("Specify the feature from the vcpkg.json to install.")]
-    readonly string VcpkgFeature;
+    [Parameter("Specify which package to install.")]
+    readonly string VcpkgPackageName = "ffmpeg";
+
+    [Parameter("Specify which version of the specified package to install.")]
+    readonly string VcpkgPackageVersion = "4.4.4";
+
+    [Parameter("Specify whether the default features of the specified package should be installed or not.")]
+    readonly bool VcpkgDefaultFeatures = true;
+
+    [Parameter("Specify which optional features of the specified package to install.")]
+    readonly string[] VcpkgFeatures = Array.Empty<string>();
 
     [Parameter("Specify the target architecture triplet(s).", Separator = ",")]
-    readonly string[] VcpkgTriplets;
+    readonly string[] VcpkgTriplets = Array.Empty<string>();
 
     [Parameter("Specify the source(s) to use for binary caching.", Separator = ";")]
     readonly string[] VcpkgBinarySources = Array.Empty<string>();
+
+    [Parameter("Specify the NuGet package identifier.")]
+    readonly string NuGetPackageID = "FFmpeg";
+
+    [Parameter("Specifiy the NuGet package authors.")]
+    readonly string[] NuGetAuthors = new [] { "Ronald van Manen" };
+
+    [Parameter("Specify the NuGet package's home page.")]
+    readonly string NuGetProjectUrl = "https://github.com/ronaldvanmanen/FFmpeg-packaging";
+
+    [Parameter("Specify the NuGet package's license.")]
+    readonly string NuGetLicense = "LGPL-2.1-or-later";
+
+    [Parameter("Specify the NuGet package's reposity URL.")]
+    readonly string NuGetRepositoryUrl = "https://github.com/ronaldvanmanen/FFmpeg-packaging";
 
     [Parameter("The Azure DevOps personal access token")]
     [Secret]
@@ -117,6 +132,8 @@ class Build : NukeBuild
 
     AbsolutePath NuGetInstallRootDirectory => NuGetArtifactsRootDirectory / "installed";
 
+    AbsolutePath VcpkgJsonFile => RootDirectory / "vcpkg.json";
+
     AbsolutePath NuGetConfigFile => RootDirectory / "NuGet.config";
 
     [LocalPath(windowsPath: "vcpkg/bootstrap-vcpkg.bat", unixPath: "vcpkg/bootstrap.sh")]
@@ -127,7 +144,7 @@ class Build : NukeBuild
 
     Tool Sudo => ToolResolver.GetPathTool("sudo");
 
-    string GetRuntimeID(string vcpkgTriplet) =>
+    string GetDotNetRuntimeID(string vcpkgTriplet) =>
         vcpkgTriplet switch
         {
             "x64-linux-dynamic-release" => "linux-x64",
@@ -136,11 +153,11 @@ class Build : NukeBuild
             _ => throw new NotSupportedException($"The vcpkg triplet `{vcpkgTriplet} is not yet supported.")
         };
 
-    string GetRuntimePackageID(string vcpkgTriplet) =>
-        $"{ProjectName}.runtime.{GetRuntimeID(vcpkgTriplet)}";
+    string GetNuGetRuntimePackageID(string vcpkgTriplet) =>
+        $"{NuGetPackageID}.runtime.{GetDotNetRuntimeID(vcpkgTriplet)}";
 
     AbsolutePath GetVcpkgBuildRootDirectory(string vcpkgTriplet) =>
-        VcpkgArtifactsRootDirectory / VcpkgFeature / GetRuntimeID(vcpkgTriplet);
+        VcpkgArtifactsRootDirectory / GetDotNetRuntimeID(vcpkgTriplet);
 
     AbsolutePath GetVcpkgBuildtreesRootDirectory(string vcpkgTriplet) =>
         GetVcpkgBuildRootDirectory(vcpkgTriplet) / "buildtrees";
@@ -169,6 +186,41 @@ class Build : NukeBuild
         .Executes(() =>
         {
             BootstrapVcpkg("-disableMetrics");
+
+            VcpkgJsonFile.WriteJson(
+                new JObject {
+                    ["$schema"] = "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
+                    ["name"] = "ffmpeg-packaging",
+                    ["dependencies"] = new JArray {
+                        new JObject
+                        {
+                            ["name"] = VcpkgPackageName,
+                            ["default-features"] = VcpkgDefaultFeatures,
+                            ["features"] = new JArray(VcpkgFeatures)
+                        }
+                    },
+                    ["overrides"] = new JArray
+                    {
+                        new JObject
+                        {
+                            ["name"] = VcpkgPackageName,
+                            ["version"] = VcpkgPackageVersion
+                        }
+                    },
+                    ["vcpkg-configuration"] = new JObject
+                    {
+                        ["overlay-ports"] = new JArray
+                        {
+                            "./vcpkg-ports"
+                        },
+                        ["overlay-triplets"] = new JArray
+                        {
+                            "./vcpkg-triplets"
+                        }
+                    },
+                    ["builtin-baseline"] = "0b9830a287d7be76d085bc6ca984c935bdf9db96"
+                }
+            );
         });
 
     Target SetupNuGet => _ => _
@@ -236,7 +288,7 @@ class Build : NukeBuild
         .DependsOn(SetupVcpkg)
         .DependsOn(SetupNuGet)
         .DependsOn(SetupBuildDependencies)
-        .Requires(() => VcpkgFeature)
+        .Requires(() => VcpkgFeatures)
         .Requires(() => VcpkgTriplets)
         .Executes(() => VcpkgTriplets.ForEach(vcpkgTriplet =>
         {
@@ -259,7 +311,7 @@ class Build : NukeBuild
                 $"--x-install-root={vcpkgInstallRootDirectory}",
                 $"--x-packages-root={vcpkgPackagesRootDirectory}",
                 $"--x-no-default-features",
-                $"--x-feature={VcpkgFeature}",
+                $"--x-feature={VcpkgFeatures}",
                 $"--clean-after-build",
                 $"--disable-metrics",
             };
@@ -286,11 +338,11 @@ class Build : NukeBuild
     Target ZipPortPackage => _ => _
         .After(Clean)
         .DependsOn(BuildPortPackage)
-        .Requires(() => VcpkgFeature)
+        .Requires(() => VcpkgFeatures)
         .Requires(() => VcpkgTriplets)
         .Executes(() => VcpkgTriplets.ForEach(vcpkgTriplet =>
         {
-            var vcpkgBuildArchive = VcpkgArtifactsRootDirectory / $"vcpkg-{VcpkgFeature}-{vcpkgTriplet}.zip";
+            var vcpkgBuildArchive = VcpkgArtifactsRootDirectory / $"vcpkg-{VcpkgFeatures}-{vcpkgTriplet}.zip";
             var vcpkgBuildDirectory = GetVcpkgBuildRootDirectory(vcpkgTriplet);
 
             VcpkgArtifactsRootDirectory.ZipTo(
@@ -305,12 +357,12 @@ class Build : NukeBuild
     Target UnzipPortPackage => _ => _
         .After(Clean)
         .DependsOn(ZipPortPackage)
-        .Requires(() => VcpkgFeature)
+        .Requires(() => VcpkgFeatures)
         .Requires(() => VcpkgTriplets)
         .Executes(() => VcpkgTriplets.ForEach(vcpkgTriplet =>
         {
             var vcpkgBuildDirectory = GetVcpkgBuildRootDirectory(vcpkgTriplet);
-            var vcpkgBuildArchive = VcpkgArtifactsRootDirectory / $"vcpkg-{VcpkgFeature}-{vcpkgTriplet}.zip";
+            var vcpkgBuildArchive = VcpkgArtifactsRootDirectory / $"vcpkg-{VcpkgFeatures}-{vcpkgTriplet}.zip";
             vcpkgBuildArchive.UnZipTo(VcpkgArtifactsRootDirectory);
             vcpkgBuildArchive.DeleteFile();
         }));
@@ -318,12 +370,12 @@ class Build : NukeBuild
     Target BuildRuntimePackage => _ => _
         .After(Clean)
         .DependsOn(UnzipPortPackage)
-        .Requires(() => VcpkgFeature)
+        .Requires(() => VcpkgFeatures)
         .Requires(() => VcpkgTriplets)
         .Executes(() => VcpkgTriplets.ForEach(vcpkgTriplet =>
         {
-            var dotnetRuntimeIdentifier = GetRuntimeID(vcpkgTriplet);
-            var packageID = GetRuntimePackageID(vcpkgTriplet);
+            var dotnetRuntimeIdentifier = GetDotNetRuntimeID(vcpkgTriplet);
+            var packageID = GetNuGetRuntimePackageID(vcpkgTriplet);
             var packageBuildDirectory = NuGetBuildRootDirectory / $"{packageID}.nupkg";
             var packageSpecFile = packageBuildDirectory / $"{packageID}.nuspec";
 
@@ -337,15 +389,15 @@ class Build : NukeBuild
                             new XAttribute("minClientVersion", "2.12"),
                             new XElement("id", packageID),
                             new XElement("version", GitVersion.NuGetVersion),
-                            new XElement("authors", ProjectAuthor),
+                            new XElement("authors", NuGetAuthors),
                             new XElement("requireLicenseAcceptance", true),
-                            new XElement("license", new XAttribute("type", "expression"), ProjectLicense),
-                            new XElement("projectUrl", ProjectUrl),
-                            new XElement("description", $"{dotnetRuntimeIdentifier} runtime library for {ProjectName}."),
-                            new XElement("copyright", $"Copyright © {ProjectAuthor}"),
+                            new XElement("license", new XAttribute("type", "expression"), NuGetLicense),
+                            new XElement("projectUrl", NuGetProjectUrl),
+                            new XElement("description", $"{dotnetRuntimeIdentifier} runtime library for {NuGetPackageID}."),
+                            new XElement("copyright", $"Copyright © {NuGetAuthors}"),
                             new XElement("repository",
                                 new XAttribute("type", "git"),
-                                new XAttribute("url", RepositoryUrl)
+                                new XAttribute("url", NuGetRepositoryUrl)
                             )
                         )
                     )
@@ -371,11 +423,11 @@ class Build : NukeBuild
     Target BuildMultiplatformPackage => _ => _
         .After(Clean)
         .DependsOn(BuildPortPackage)
-        .Requires(() => VcpkgFeature)
+        .Requires(() => VcpkgFeatures)
         .Requires(() => VcpkgTriplets)
         .Executes(() =>
         {
-            var packageID = $"{ProjectName}";
+            var packageID = $"{NuGetPackageID}";
             var packageBuildDirectory = NuGetBuildRootDirectory / $"{packageID}.nupkg";
             var packageSpecFile = packageBuildDirectory / $"{packageID}.nuspec";
             var packageVersion = GitVersion.NuGetVersion;
@@ -396,15 +448,15 @@ class Build : NukeBuild
                             new XAttribute("minClientVersion", "2.12"),
                             new XElement("id", packageID),
                             new XElement("version", packageVersion),
-                            new XElement("authors", ProjectAuthor),
+                            new XElement("authors", NuGetAuthors),
                             new XElement("requireLicenseAcceptance", true),
-                            new XElement("license", new XAttribute("type", "expression"), ProjectLicense),
-                            new XElement("projectUrl", ProjectUrl),
-                            new XElement("description", $"Multi-platform native library for {ProjectName}."),
-                            new XElement("copyright", $"Copyright © {ProjectAuthor}"),
+                            new XElement("license", new XAttribute("type", "expression"), NuGetLicense),
+                            new XElement("projectUrl", NuGetProjectUrl),
+                            new XElement("description", $"Multi-platform native library for {NuGetPackageID}."),
+                            new XElement("copyright", $"Copyright © {NuGetAuthors}"),
                             new XElement("repository",
                                 new XAttribute("type", "git"),
-                                new XAttribute("url", RepositoryUrl)
+                                new XAttribute("url", NuGetRepositoryUrl)
                             ),
                             new XElement("dependencies",
                                 new XElement("group",
@@ -427,8 +479,8 @@ class Build : NukeBuild
                 new RuntimeGraph(
                     VcpkgTriplets.Select(vcpkgTriplet =>
                     {
-                        var runtimeID = GetRuntimeID(vcpkgTriplet);
-                        var runtimePackageID = GetRuntimePackageID(vcpkgTriplet);
+                        var runtimeID = GetDotNetRuntimeID(vcpkgTriplet);
+                        var runtimePackageID = GetNuGetRuntimePackageID(vcpkgTriplet);
                         return new RuntimeDescription(runtimeID, new []
                         {
                             new RuntimeDependencySet(packageID, new []
