@@ -223,7 +223,7 @@ class Build : NukeBuild
                             "./vcpkg-triplets"
                         }
                     },
-                    ["builtin-baseline"] = "0b9830a287d7be76d085bc6ca984c935bdf9db96"
+                    ["builtin-baseline"] = "80403036a665cb8fcc1a1b3e17593d20b03b2489"
                 }
             );
         });
