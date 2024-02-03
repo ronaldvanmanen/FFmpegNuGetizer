@@ -311,9 +311,8 @@ __pycache__/
 *.pyc
 
 # Cake
-tools/**
-!tools/packages.config
-NuGet.config
+#tools/**
+#!tools/packages.config
 
 # Tabs Studio
 *.tss
@@ -355,4 +354,5 @@ MigrationBackup/
 .ionide/
 
 # Nuke
+NuGet.config
 vcpkg.json
