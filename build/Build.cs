@@ -12,7 +12,6 @@ using Nuke.Common;
 using Nuke.Common.Execution;
 using Nuke.Common.IO;
 using Nuke.Common.Tooling;
-using Nuke.Common.Tools.GitVersion;
 using Nuke.Common.Tools.NuGet;
 using Nuke.Common.Utilities;
 using Nuke.Common.Utilities.Collections;
@@ -66,9 +65,6 @@ class Build : NukeBuild
     [Parameter("The GitHub personal access token")]
     [Secret]
     readonly string GitHubToken;
-
-    [GitVersion]
-    readonly GitVersion GitVersion;
 
     static readonly IEnumerable<string> BuildDependenciesForLinux =
         new []
@@ -153,11 +149,17 @@ class Build : NukeBuild
             _ => throw new NotSupportedException($"The vcpkg triplet `{vcpkgTriplet} is not yet supported.")
         };
 
+    string GetNuGetMultiplatformPackageID() =>
+        $"{NuGetPackageID}";
+
     string GetNuGetRuntimePackageID(string vcpkgTriplet) =>
         $"{NuGetPackageID}.runtime.{GetDotNetRuntimeID(vcpkgTriplet)}";
 
+    string GetNuGetPackageVersion(string vcpkgPackageVersion)
+        => vcpkgPackageVersion.Replace('#', '.');
+
     AbsolutePath GetVcpkgBuildRootDirectory(string vcpkgTriplet) =>
-        VcpkgArtifactsRootDirectory / GetDotNetRuntimeID(vcpkgTriplet);
+        VcpkgArtifactsRootDirectory / $"{VcpkgPackageName}-{VcpkgPackageVersion.Replace('#', '.')}" / GetDotNetRuntimeID(vcpkgTriplet);
 
     AbsolutePath GetVcpkgBuildtreesRootDirectory(string vcpkgTriplet) =>
         GetVcpkgBuildRootDirectory(vcpkgTriplet) / "buildtrees";
@@ -182,7 +184,10 @@ class Build : NukeBuild
         });
 
     Target SetupVcpkg => _ => _
-        .Unlisted()
+        .Requires(() => VcpkgPackageName)
+        .Requires(() => VcpkgPackageVersion)
+        .Requires(() => VcpkgDefaultFeatures)
+        .Requires(() => VcpkgFeatures)
         .Executes(() =>
         {
             BootstrapVcpkg("-disableMetrics");
@@ -370,13 +375,15 @@ class Build : NukeBuild
     Target BuildRuntimePackage => _ => _
         .After(Clean)
         .DependsOn(UnzipPortPackage)
+        .Requires(() => VcpkgPackageVersion)
         .Requires(() => VcpkgFeatures)
         .Requires(() => VcpkgTriplets)
         .Executes(() => VcpkgTriplets.ForEach(vcpkgTriplet =>
         {
             var dotnetRuntimeIdentifier = GetDotNetRuntimeID(vcpkgTriplet);
             var packageID = GetNuGetRuntimePackageID(vcpkgTriplet);
-            var packageBuildDirectory = NuGetBuildRootDirectory / $"{packageID}.nupkg";
+            var packageVersion = GetNuGetPackageVersion(VcpkgPackageVersion);
+            var packageBuildDirectory = NuGetBuildRootDirectory / $"{packageID}.{packageVersion}.nupkg";
             var packageSpecFile = packageBuildDirectory / $"{packageID}.nuspec";
 
             packageBuildDirectory.CreateOrCleanDirectory();
@@ -388,7 +395,7 @@ class Build : NukeBuild
                         new XElement("metadata",
                             new XAttribute("minClientVersion", "2.12"),
                             new XElement("id", packageID),
-                            new XElement("version", GitVersion.NuGetVersion),
+                            new XElement("version", packageVersion),
                             new XElement("authors", NuGetAuthors),
                             new XElement("requireLicenseAcceptance", true),
                             new XElement("license", new XAttribute("type", "expression"), NuGetLicense),
@@ -427,10 +434,10 @@ class Build : NukeBuild
         .Requires(() => VcpkgTriplets)
         .Executes(() =>
         {
-            var packageID = $"{NuGetPackageID}";
-            var packageBuildDirectory = NuGetBuildRootDirectory / $"{packageID}.nupkg";
+            var packageID = GetNuGetMultiplatformPackageID();
+            var packageVersion = GetNuGetPackageVersion(VcpkgPackageVersion);
+            var packageBuildDirectory = NuGetBuildRootDirectory / $"{packageID}.{packageVersion}.nupkg";
             var packageSpecFile = packageBuildDirectory / $"{packageID}.nuspec";
-            var packageVersion = GitVersion.NuGetVersion;
             var runtimeSpec = packageBuildDirectory / "runtime.json";
             var runtimePackageVersion = VersionRange.Parse(packageVersion);
             var placeholderFiles = new []
