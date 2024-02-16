@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.IO.Compression;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Xml.Linq;
@@ -340,41 +339,9 @@ class Build : NukeBuild
             Vcpkg(arguments);
         }));
 
-    Target ZipPortPackage => _ => _
-        .After(Clean)
-        .DependsOn(BuildPortPackage)
-        .Requires(() => VcpkgFeatures)
-        .Requires(() => VcpkgTriplets)
-        .Executes(() => VcpkgTriplets.ForEach(vcpkgTriplet =>
-        {
-            var vcpkgBuildArchive = VcpkgArtifactsRootDirectory / $"vcpkg-{VcpkgFeatures}-{vcpkgTriplet}.zip";
-            var vcpkgBuildDirectory = GetVcpkgBuildRootDirectory(vcpkgTriplet);
-
-            VcpkgArtifactsRootDirectory.ZipTo(
-                vcpkgBuildArchive,
-                filter: filePath => vcpkgBuildDirectory.Contains(filePath),
-                compressionLevel: CompressionLevel.NoCompression,
-                fileMode: FileMode.Create);
-
-            vcpkgBuildDirectory.DeleteDirectory();
-        }));
-
-    Target UnzipPortPackage => _ => _
-        .After(Clean)
-        .DependsOn(ZipPortPackage)
-        .Requires(() => VcpkgFeatures)
-        .Requires(() => VcpkgTriplets)
-        .Executes(() => VcpkgTriplets.ForEach(vcpkgTriplet =>
-        {
-            var vcpkgBuildDirectory = GetVcpkgBuildRootDirectory(vcpkgTriplet);
-            var vcpkgBuildArchive = VcpkgArtifactsRootDirectory / $"vcpkg-{VcpkgFeatures}-{vcpkgTriplet}.zip";
-            vcpkgBuildArchive.UnZipTo(VcpkgArtifactsRootDirectory);
-            vcpkgBuildArchive.DeleteFile();
-        }));
-
     Target BuildRuntimePackage => _ => _
         .After(Clean)
-        .DependsOn(UnzipPortPackage)
+        .DependsOn(BuildPortPackage)
         .Requires(() => VcpkgPackageVersion)
         .Requires(() => VcpkgFeatures)
         .Requires(() => VcpkgTriplets)
