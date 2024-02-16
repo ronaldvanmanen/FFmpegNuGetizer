@@ -5,8 +5,6 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Xml.Linq;
 using JetBrains.Annotations;
-using NuGet.RuntimeModel;
-using NuGet.Versioning;
 using Nuke.Common;
 using Nuke.Common.Execution;
 using Nuke.Common.IO;
@@ -405,8 +403,7 @@ class Build : NukeBuild
             var packageVersion = GetNuGetPackageVersion(VcpkgPackageVersion);
             var packageBuildDirectory = NuGetBuildRootDirectory / $"{packageID}.{packageVersion}.nupkg";
             var packageSpecFile = packageBuildDirectory / $"{packageID}.nuspec";
-            var runtimeSpec = packageBuildDirectory / "runtime.json";
-            var runtimePackageVersion = VersionRange.Parse(packageVersion);
+            var runtimeJsonFile = packageBuildDirectory / "runtime.json";
             var placeholderFiles = new []
             {
                 packageBuildDirectory / "lib" / "netstandard2.0" / "_._"
@@ -449,20 +446,23 @@ class Build : NukeBuild
                 CopyDirectoryRecursively(includeDirectory, includeTargetDirectory, DirectoryExistsPolicy.Merge, FileExistsPolicy.Skip);
             }
 
-            runtimeSpec.WriteRuntimeGraph(
-                new RuntimeGraph(
-                    VcpkgTriplets.Select(vcpkgTriplet =>
-                    {
-                        var runtimeID = GetDotNetRuntimeID(vcpkgTriplet);
-                        var runtimePackageID = GetNuGetRuntimePackageID(vcpkgTriplet);
-                        return new RuntimeDescription(runtimeID, new []
+            runtimeJsonFile.WriteJson(
+                new JObject
+                {
+                    ["runtimes"] = new JObject(
+                        VcpkgTriplets.Select(vcpkgTriplet =>
                         {
-                            new RuntimeDependencySet(packageID, new []
-                            {
-                                new RuntimePackageDependency(runtimePackageID, runtimePackageVersion)
-                            })
-                        });
-                    })));
+                            var runtimeID = GetDotNetRuntimeID(vcpkgTriplet);
+                            var runtimePackageID = GetNuGetRuntimePackageID(vcpkgTriplet);
+                            var runtimePackageVersion = GetNuGetPackageVersion(VcpkgPackageVersion);
+                            return new JProperty(runtimeID, new JObject(
+                                new JProperty(packageID, new JObject(
+                                    new JProperty(runtimePackageID, $"[{runtimePackageVersion}]")
+                                )
+                            )));
+                        })
+                    )
+                });
 
             foreach (var placeholder in placeholderFiles)
             {
