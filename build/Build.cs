@@ -22,7 +22,7 @@ using Newtonsoft.Json.Linq;
 
 class Build : NukeBuild
 {
-    public static int Main () => Execute<Build>(x => x.BuildMultiplatformPackage);
+    public static int Main () => Execute<Build>(x => x.BuildRuntimePackage, x => x.BuildMultiplatformPackage);
 
     [Parameter("Specify which package to install.")]
     readonly string VcpkgPackageName = "ffmpeg";
