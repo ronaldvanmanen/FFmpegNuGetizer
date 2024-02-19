@@ -127,6 +127,8 @@ class Build : NukeBuild
 
     AbsolutePath VcpkgJsonFile => RootDirectory / "vcpkg.json";
 
+    AbsolutePath VcpkgConfigurationJsonFile => RootDirectory / "vcpkg-configuration.json";
+
     AbsolutePath NuGetConfigFile => RootDirectory / "NuGet.config";
 
     [LocalPath(windowsPath: "vcpkg/bootstrap-vcpkg.bat", unixPath: "vcpkg/bootstrap.sh")]
@@ -209,18 +211,22 @@ class Build : NukeBuild
                             ["version"] = VcpkgPackageVersion
                         }
                     },
-                    ["vcpkg-configuration"] = new JObject
-                    {
-                        ["overlay-ports"] = new JArray
-                        {
-                            "./vcpkg-ports"
-                        },
-                        ["overlay-triplets"] = new JArray
-                        {
-                            "./vcpkg-triplets"
-                        }
-                    },
                     ["builtin-baseline"] = "80403036a665cb8fcc1a1b3e17593d20b03b2489"
+                }
+            );
+
+            VcpkgConfigurationJsonFile.WriteJson(
+                new JObject
+                {
+                    ["$schema"] = "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg-configuration.schema.json",
+                    ["overlay-ports"] = new JArray
+                    {
+                        "./vcpkg-ports"
+                    },
+                    ["overlay-triplets"] = new JArray
+                    {
+                        "./vcpkg-triplets"
+                    }
                 }
             );
         });

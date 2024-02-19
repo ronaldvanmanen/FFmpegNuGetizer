@@ -356,3 +356,4 @@ MigrationBackup/
 # Nuke
 NuGet.config
 vcpkg.json
+vcpkg-configuration.json
