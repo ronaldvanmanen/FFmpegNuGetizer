@@ -5,6 +5,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Xml.Linq;
 using JetBrains.Annotations;
+using Newtonsoft.Json.Linq;
 using Nuke.Common;
 using Nuke.Common.Execution;
 using Nuke.Common.IO;
@@ -14,9 +15,9 @@ using Nuke.Common.Utilities;
 using Nuke.Common.Utilities.Collections;
 using static System.Runtime.InteropServices.RuntimeInformation;
 using static Nuke.Common.IO.FileSystemTasks;
+using static Nuke.Common.Tools.Git.GitTasks;
 using static Nuke.Common.Tools.NuGet.NuGetTasks;
 using static NuGetTasks;
-using Newtonsoft.Json.Linq;
 
 class Build : NukeBuild
 {
@@ -175,6 +176,13 @@ class Build : NukeBuild
     AbsolutePath GetVcpkgInstallDirectory(string vcpkgTriplet) =>
         GetVcpkgInstallRootDirectory(vcpkgTriplet) / vcpkgTriplet;
 
+    string GetVcpkgBaseline()
+    {
+        var outputLines = Git("submodule status vcpkg");
+        var outputLine = outputLines.First();
+        return outputLine.Text.Trim().Split(' ')[0];
+    }
+
     [UsedImplicitly]
     Target Clean => _ => _
         .Executes(() =>
@@ -211,7 +219,7 @@ class Build : NukeBuild
                             ["version"] = VcpkgPackageVersion
                         }
                     },
-                    ["builtin-baseline"] = "80403036a665cb8fcc1a1b3e17593d20b03b2489"
+                    ["builtin-baseline"] = GetVcpkgBaseline()
                 }
             );
 
@@ -318,8 +326,6 @@ class Build : NukeBuild
                 $"--x-buildtrees-root={vcpkgBuildtreesRootDirectory}",
                 $"--x-install-root={vcpkgInstallRootDirectory}",
                 $"--x-packages-root={vcpkgPackagesRootDirectory}",
-                $"--x-no-default-features",
-                $"--x-feature={VcpkgFeatures}",
                 $"--clean-after-build",
                 $"--disable-metrics",
             };
