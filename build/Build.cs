@@ -14,10 +14,8 @@ using Nuke.Common.Tools.NuGet;
 using Nuke.Common.Utilities;
 using Nuke.Common.Utilities.Collections;
 using static System.Runtime.InteropServices.RuntimeInformation;
-using static Nuke.Common.IO.FileSystemTasks;
 using static Nuke.Common.Tools.Git.GitTasks;
 using static Nuke.Common.Tools.NuGet.NuGetTasks;
-using static NuGetTasks;
 
 class Build : NukeBuild
 {
@@ -33,19 +31,19 @@ class Build : NukeBuild
     readonly bool VcpkgDefaultFeatures = true;
 
     [Parameter("Specify which optional features of the specified package to install.")]
-    readonly string[] VcpkgFeatures = Array.Empty<string>();
+    readonly string[] VcpkgFeatures = [];
 
     [Parameter("Specify the target architecture triplet(s).", Separator = ",")]
-    readonly string[] VcpkgTriplets = Array.Empty<string>();
+    readonly string[] VcpkgTriplets = [];
 
     [Parameter("Specify the source(s) to use for binary caching.", Separator = ";")]
-    readonly string[] VcpkgBinarySources = Array.Empty<string>();
+    readonly string[] VcpkgBinarySources = [];
 
     [Parameter("Specify the NuGet package identifier.")]
     readonly string NuGetPackageID = "FFmpeg";
 
     [Parameter("Specifiy the NuGet package authors.")]
-    readonly string[] NuGetAuthors = new [] { "Ronald van Manen" };
+    readonly string[] NuGetAuthors = ["Ronald van Manen"];
 
     [Parameter("Specify the NuGet package's home page.")]
     readonly string NuGetProjectUrl = "https://github.com/ronaldvanmanen/FFmpeg-packaging";
@@ -65,12 +63,11 @@ class Build : NukeBuild
     readonly string GitHubToken;
 
     static readonly IEnumerable<string> BuildDependenciesForLinux =
-        new []
-        {
+        [
             "libgl-dev",
             "libglfw3-dev",
             "nasm"
-        };
+        ];
 
     IEnumerable<NuGetFeedSettings> NuGetFeeds
     {
@@ -276,13 +273,21 @@ class Build : NukeBuild
 
                 if (!string.IsNullOrWhiteSpace(nugetFeed.ApiKey))
                 {
-                    NuGetSetApiKey(
-                        new NuGetSetApiKeySettings()
-                            .SetConfigFile(NuGetConfigFile)
-                            .SetSource(nugetFeed.Source)
-                            .SetApiKey(nugetFeed.ApiKey)
-                            .SetNonInteractive(IsServerBuild)
-                    );
+                    var argumentList = new List<string>
+                    {
+                        $"setApiKey {nugetFeed.ApiKey}",
+                        $"-ConfigFile {NuGetConfigFile}",
+                        $"-Source {nugetFeed.Source}"
+                    };
+
+                    if (IsServerBuild)
+                    {
+                        argumentList.Add("-NonInteractive");
+                    }
+
+                    ArgumentStringHandler arguments = "";
+                    arguments.AppendLiteral(string.Join(' ', argumentList));
+                    NuGetTasks.NuGet(arguments);
                 }
             }
         });
@@ -342,10 +347,8 @@ class Build : NukeBuild
             // NOTE: ArgumentStringHandler assumes our arguments must be double qouted because we
             // pass our arguments as a single string. To prevent this from happening we explicity
             // create an ArgumentStringHandler and append our arguments as a string literal.
-            var argumentString = string.Join(' ', argumentList);
             ArgumentStringHandler arguments = "";
-            arguments.AppendLiteral(argumentString);
-
+            arguments.AppendLiteral(string.Join(' ', argumentList));
             Vcpkg(arguments);
         }));
 
@@ -393,7 +396,7 @@ class Build : NukeBuild
             var libraryFiles = vcpkgInstallRootDirectory.GlobFiles("lib/*.so*", $"bin/*.dll");
             foreach (var libraryFile in libraryFiles)
             {
-                CopyFileToDirectory(libraryFile, libraryTargetDirectory);
+                libraryFile.CopyToDirectory(libraryTargetDirectory);
             }
 
             var packSettings = new NuGetPackSettings()
@@ -455,7 +458,7 @@ class Build : NukeBuild
             var includeDirectories = VcpkgTriplets.Select(vcpkgTriplet => GetVcpkgInstallDirectory(vcpkgTriplet) / "include");
             foreach (var includeDirectory in includeDirectories)
             {
-                CopyDirectoryRecursively(includeDirectory, includeTargetDirectory, DirectoryExistsPolicy.Merge, FileExistsPolicy.Skip);
+                includeDirectory.Copy(includeTargetDirectory, ExistsPolicy.MergeAndSkip);
             }
 
             runtimeJsonFile.WriteJson(
