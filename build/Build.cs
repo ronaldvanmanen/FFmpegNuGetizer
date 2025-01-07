@@ -39,6 +39,12 @@ class Build : NukeBuild
     [Parameter("Specify the source(s) to use for binary caching.", Separator = ";")]
     readonly string[] VcpkgBinarySources = [];
 
+    [Parameter("Specify the path(s) to containing overlay ports.", Separator = ";")]
+    readonly AbsolutePath[] VcpkgOverlayPorts = [];
+
+    [Parameter("Specify the path(s) to containing overlay triplets.", Separator = ";")]
+    readonly AbsolutePath[] VcpkgOverlayTriplets = [];
+
     [Parameter("Specify the NuGet package identifier.")]
     readonly string NuGetPackageID = "FFmpeg";
 
@@ -224,14 +230,8 @@ class Build : NukeBuild
                 new JObject
                 {
                     ["$schema"] = "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg-configuration.schema.json",
-                    ["overlay-ports"] = new JArray
-                    {
-                        "./vcpkg-ports"
-                    },
-                    ["overlay-triplets"] = new JArray
-                    {
-                        "./vcpkg-triplets"
-                    }
+                    ["overlay-ports"] = new JArray(VcpkgOverlayPorts.Select(e => e.ToString()).ToArray()),
+                    ["overlay-triplets"] = new JArray(VcpkgOverlayTriplets.Select(e => e.ToString()).ToArray())
                 }
             );
         });

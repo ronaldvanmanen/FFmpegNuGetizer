@@ -156,6 +156,20 @@
             "type": "string"
           }
         },
+        "VcpkgOverlayPorts": {
+          "type": "array",
+          "description": "Specify the path(s) to containing overlay ports",
+          "items": {
+            "type": "string"
+          }
+        },
+        "VcpkgOverlayTriplets": {
+          "type": "array",
+          "description": "Specify the path(s) to containing overlay triplets",
+          "items": {
+            "type": "string"
+          }
+        },
         "VcpkgPackageName": {
           "type": "string",
           "description": "Specify which package to install"
