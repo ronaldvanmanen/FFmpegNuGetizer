@@ -239,10 +239,7 @@ class Build : NukeBuild
     Target SetupNuGet => _ => _
         .Executes(() =>
         {
-            if (NuGetConfigFile.FileExists())
-            {
-                NuGetConfigFile.DeleteFile();
-            }
+            NuGetConfigFile.DeleteFile();
 
             NuGetConfigFile.WriteXml(
                 new XDocument(
