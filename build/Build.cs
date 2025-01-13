@@ -396,9 +396,10 @@ class Build : NukeBuild
                 libraryFile.CopyToDirectory(libraryTargetDirectory);
             }
 
+            var targetPath = packageBuildDirectory.GetRelativePathTo(packageSpecFile);
             var packSettings = new NuGetPackSettings()
                 .SetProcessWorkingDirectory(packageBuildDirectory)
-                .SetTargetPath(packageSpecFile)
+                .SetTargetPath(targetPath)
                 .SetOutputDirectory(NuGetInstallRootDirectory);
 
             NuGetPack(packSettings);
@@ -481,9 +482,10 @@ class Build : NukeBuild
                 placeholder.TouchFile();
             }
 
+            var targetPath = packageBuildDirectory.GetRelativePathTo(packageSpecFile);
             var packSettings = new NuGetPackSettings()
                 .SetProcessWorkingDirectory(packageBuildDirectory)
-                .SetTargetPath(packageSpecFile)
+                .SetTargetPath(targetPath)
                 .SetOutputDirectory(NuGetInstallRootDirectory)
                 .SetNoPackageAnalysis(true);
 
