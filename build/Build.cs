@@ -139,7 +139,7 @@ class Build : NukeBuild
 
     AbsolutePath NuGetConfigFile => RootDirectory / "NuGet.config";
 
-    [LocalPath(windowsPath: "vcpkg/bootstrap-vcpkg.bat", unixPath: "vcpkg/bootstrap.sh")]
+    [LocalPath(windowsPath: "vcpkg/bootstrap-vcpkg.bat", unixPath: "vcpkg/bootstrap-vcpkg.sh")]
     readonly Tool BootstrapVcpkg;
 
     [LocalPath(windowsPath: "vcpkg/vcpkg.exe", unixPath: "vcpkg/vcpkg")]
