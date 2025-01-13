@@ -354,6 +354,7 @@ MigrationBackup/
 .ionide/
 
 # Nuke
+.nuke/temp/
 NuGet.config
 vcpkg.json
 vcpkg-configuration.json
