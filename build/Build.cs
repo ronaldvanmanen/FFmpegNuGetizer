@@ -69,11 +69,15 @@ class Build : NukeBuild
     readonly string GitHubToken;
 
     static readonly IEnumerable<string> BuildDependenciesForLinux =
-        [
-            "libgl-dev",
-            "libglfw3-dev",
-            "nasm"
-        ];
+    [
+        "libgl-dev",
+        "libglfw3-dev",
+        "nasm",
+        "curl",
+        "zip",
+        "unzip",
+        "tar"
+    ];
 
     IEnumerable<NuGetFeedSettings> NuGetFeeds
     {
