@@ -357,7 +357,7 @@ class Build : NukeBuild
         .Requires(() => VcpkgTriplets)
         .Executes(() => VcpkgTriplets.ForEach(vcpkgTriplet =>
         {
-            var dotnetRuntimeIdentifier = GetDotNetRuntimeID(vcpkgTriplet);
+            var dotNetRuntimeID = GetDotNetRuntimeID(vcpkgTriplet);
             var packageID = GetNuGetRuntimePackageID(vcpkgTriplet);
             var packageVersion = GetNuGetPackageVersion(VcpkgPackageVersion);
             var packageBuildDirectory = NuGetBuildRootDirectory / $"{packageID}.{packageVersion}.nupkg";
@@ -377,7 +377,7 @@ class Build : NukeBuild
                             new XElement("requireLicenseAcceptance", true),
                             new XElement("license", new XAttribute("type", "expression"), NuGetLicense),
                             new XElement("projectUrl", NuGetProjectUrl),
-                            new XElement("description", $"{dotnetRuntimeIdentifier} runtime library for {NuGetPackageID}."),
+                            new XElement("description", $"{dotNetRuntimeID} runtime library for {NuGetPackageID}."),
                             new XElement("copyright", $"Copyright © {NuGetAuthors}"),
                             new XElement("repository",
                                 new XAttribute("type", "git"),
@@ -388,7 +388,7 @@ class Build : NukeBuild
                 )
             );
 
-            var libraryTargetDirectory = packageBuildDirectory / "runtimes" / $"{dotnetRuntimeIdentifier}" / "native";
+            var libraryTargetDirectory = packageBuildDirectory / "runtimes" / $"{dotNetRuntimeID}" / "native";
             var vcpkgInstallRootDirectory = GetVcpkgInstallDirectory(vcpkgTriplet);
             var libraryFiles = vcpkgInstallRootDirectory.GlobFiles("lib/*.so*", $"bin/*.dll");
             foreach (var libraryFile in libraryFiles)
