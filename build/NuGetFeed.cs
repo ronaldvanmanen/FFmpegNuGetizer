@@ -1,5 +1,3 @@
-using Nuke.Common.Tools.NuGet;
-
 class NuGetFeedSettings
 {
     public string Name { get; set; }
