@@ -34,16 +34,22 @@ class Build : NukeBuild
     readonly string[] VcpkgFeatures = [];
 
     [Parameter("Specify the target architecture triplet(s).", Separator = ",")]
-    readonly string[] VcpkgTriplets = [];
+    readonly string[] VcpkgTriplets = [ "linux-x64", "win-x64", "win-x86" ];
 
     [Parameter("Specify the source(s) to use for binary caching.", Separator = ";")]
     readonly string[] VcpkgBinarySources = [];
 
     [Parameter("Specify the path(s) to containing overlay ports.", Separator = ";")]
-    readonly AbsolutePath[] VcpkgOverlayPorts = [];
+    readonly AbsolutePath[] VcpkgOverlayPorts =
+    [
+        RootDirectory / "vcpkg-ports"
+    ];
 
     [Parameter("Specify the path(s) to containing overlay triplets.", Separator = ";")]
-    readonly AbsolutePath[] VcpkgOverlayTriplets = [];
+    readonly AbsolutePath[] VcpkgOverlayTriplets =
+    [
+        RootDirectory / "vcpkg-triplets"
+    ];
 
     [Parameter("Specify the NuGet package identifier.")]
     readonly string NuGetPackageID = "FFmpeg";
@@ -70,13 +76,15 @@ class Build : NukeBuild
 
     static readonly IEnumerable<string> BuildDependenciesForLinux =
     [
+        "build-essential",
         "libgl-dev",
         "libglfw3-dev",
         "nasm",
         "curl",
         "zip",
         "unzip",
-        "tar"
+        "tar",
+        "mingw-w64"
     ];
 
     IEnumerable<NuGetFeedSettings> NuGetFeeds
@@ -150,9 +158,9 @@ class Build : NukeBuild
     string GetDotNetRuntimeID(string vcpkgTriplet) =>
         vcpkgTriplet switch
         {
-            "x64-linux-dynamic-release" => "linux-x64",
-            "x64-windows-release" => "win-x64",
-            "x86-windows-release" => "win-x86",
+            "linux-x64" => "linux-x64",
+            "win-x64" => "win-x64",
+            "win-x86" => "win-x86",
             _ => throw new NotSupportedException($"The vcpkg triplet `{vcpkgTriplet} is not yet supported.")
         };
 
